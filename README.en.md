@@ -57,15 +57,11 @@ without opening a visible browser.
 
 ## Example prompts
 
-**Quick shortlist**
-
 ```text
 Find 5 wireless mice under RUB 4,000. Prioritize models rated at least 4.7
 with 300+ reviews. Compare the current price, availability, seller, connection,
 and weight, then recommend the best one for everyday work.
 ```
-
-**Compare options**
 
 ```text
 Compare 5 air fryers under RUB 12,000 with at least a 5-liter capacity. Check
@@ -73,15 +69,20 @@ power, programs, and dimensions in the product cards, summarize recurring pros
 and problems from recent reviews, and pick the best option for a family.
 ```
 
-**Check before buying**
-
 ```text
 Find a 20,000 mAh power bank with USB-C PD of at least 65 W under RUB 7,000.
 Check its ports and weight, then scan reviews for heat, capacity, and fast-charging
 issues. Flag anything you cannot confirm from the product card.
 ```
 
-In each scenario, the server handles the full flow: search → candidate product cards → reviews → final comparison.
+```text
+Find Samsung Galaxy S24 256 GB offers from different sellers on Ozon. Collect
+up to 5 matching product cards, verify the exact model and storage, then compare
+current prices, availability, sellers, characteristics, and recent reviews.
+Show the best-value offer and the important differences between listings.
+```
+
+Each prompt runs the full flow: search → candidate product cards → reviews → final comparison.
 
 ## Tools
 
