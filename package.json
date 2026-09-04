@@ -1,6 +1,6 @@
 {
   "name": "ozon-shopping-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unofficial Ozon MCP server for buyer-side product search, prices, product cards, and reviews.",
   "type": "module",
   "bin": {
