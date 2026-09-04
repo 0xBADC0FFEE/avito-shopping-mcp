@@ -55,17 +55,33 @@ For another MCP client, use the equivalent stdio configuration:
 Ozon may present an interactive check during the first setup. Afterwards, requests run in headless Chrome
 without opening a visible browser.
 
-## Example prompt
+## Example prompts
+
+**Quick shortlist**
 
 ```text
-Find five popular wireless mice on Ozon under RUB 4,000.
-Open their product cards and keep models rated at least 4.7 with at least 300 reviews.
-Compare the current price, availability, seller, key characteristics, and the pros and cons
-from recent reviews. Use prices and availability from my current session.
-Recommend the best option for everyday laptop work and explain the choice.
+Find 5 wireless mice under RUB 4,000. Prioritize models rated at least 4.7
+with 300+ reviews. Compare the current price, availability, seller, connection,
+and weight, then recommend the best one for everyday work.
 ```
 
-One prompt drives the whole workflow: search → candidate product cards → reviews → final comparison.
+**Compare options**
+
+```text
+Compare 5 air fryers under RUB 12,000 with at least a 5-liter capacity. Check
+power, programs, and dimensions in the product cards, summarize recurring pros
+and problems from recent reviews, and pick the best option for a family.
+```
+
+**Check before buying**
+
+```text
+Find a 20,000 mAh power bank with USB-C PD of at least 65 W under RUB 7,000.
+Check its ports and weight, then scan reviews for heat, capacity, and fast-charging
+issues. Flag anything you cannot confirm from the product card.
+```
+
+In each scenario, the server handles the full flow: search → candidate product cards → reviews → final comparison.
 
 ## Tools
 
