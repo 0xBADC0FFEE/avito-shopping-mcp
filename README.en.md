@@ -2,11 +2,15 @@
   <a href="README.md">Русский</a> · <strong>English</strong>
 </p>
 
-# Ozon Shopping MCP
+<p align="center">
+  <img src="https://raw.githubusercontent.com/neosheps/ozon-shopping-mcp/main/docs/assets/hero.png" alt="Ozon Shopping MCP" width="100%">
+</p>
 
-[![npm](https://img.shields.io/npm/v/ozon-shopping-mcp.svg)](https://www.npmjs.com/package/ozon-shopping-mcp)
-[![CI](https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://www.npmjs.com/package/ozon-shopping-mcp"><img src="https://img.shields.io/npm/v/ozon-shopping-mcp.svg" alt="npm version"></a>
+  <a href="https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml"><img src="https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+</p>
 
 **Compare Ozon products with your AI agent.** Ozon Shopping MCP turns search results, product cards, and
 reviews into tools your MCP client can use — locally, without Seller API credentials or dozens of open tabs.
