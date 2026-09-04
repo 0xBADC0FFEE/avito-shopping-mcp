@@ -88,6 +88,12 @@ codex mcp add ozon-shopping -- npx -y ozon-shopping-mcp@latest serve
 
 Каждый запрос запускает всю цепочку: поиск → карточки кандидатов → отзывы → итоговое сравнение.
 
+## Пример работы
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/neosheps/ozon-shopping-mcp/main/docs/assets/demo.png" alt="Сравнение товаров Ozon в Codex с помощью Ozon Shopping MCP" width="100%">
+</p>
+
 ## Инструменты
 
 | Инструмент | Что делает |

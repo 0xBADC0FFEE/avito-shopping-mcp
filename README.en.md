@@ -88,6 +88,12 @@ Show the best-value offer and the important differences between listings.
 
 Each prompt runs the full flow: search → candidate product cards → reviews → final comparison.
 
+## Example output
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/neosheps/ozon-shopping-mcp/main/docs/assets/demo.png" alt="Comparing Ozon products in Codex with Ozon Shopping MCP" width="100%">
+</p>
+
 ## Tools
 
 | Tool | Purpose |
