@@ -47,7 +47,7 @@ error instead of silently starting UI automation.
 
 ## Requirements
 
-- Node.js 22 or newer;
+- Node.js 24 LTS or newer;
 - Google Chrome, Microsoft Edge, or Playwright Chromium;
 - an MCP client with stdio server support.
 

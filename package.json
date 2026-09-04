@@ -50,7 +50,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
