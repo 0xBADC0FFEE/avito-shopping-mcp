@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+.idea/
+.vscode/
+*.log
+.env
+.env.*
+!.env.example
+.npmrc
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Never commit browser session data.
+.session/
+session.json
+*.storage-state.json
