@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">Ozon Shopping MCP</title>
+  <desc id="desc">GitHub social preview for the unofficial Ozon Shopping MCP server</desc>
+  <defs>
+    <linearGradient id="mcpGradient" gradientUnits="userSpaceOnUse" x1="842" y1="0" x2="960" y2="0">
+      <stop offset="0" stop-color="#005BFF"/>
+      <stop offset="0.52" stop-color="#6C3BFF"/>
+      <stop offset="1" stop-color="#F91155"/>
+    </linearGradient>
+    <linearGradient id="barGradient" gradientUnits="userSpaceOnUse" x1="220" y1="0" x2="548" y2="0">
+      <stop offset="0" stop-color="#005BFF"/>
+      <stop offset="0.52" stop-color="#6C3BFF"/>
+      <stop offset="1" stop-color="#F91155"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="#001A34"/>
+
+  <text
+    x="640"
+    y="124"
+    fill="#FFFFFF"
+    opacity="0.58"
+    font-family="SFMono-Regular, Menlo, Consolas, monospace"
+    font-size="18"
+    font-weight="700"
+    letter-spacing="5"
+    text-anchor="middle"
+  >OPEN SOURCE MCP SERVER</text>
+
+  <text
+    x="640"
+    y="300"
+    font-family="SFMono-Regular, Menlo, Consolas, monospace"
+    font-size="68"
+    font-weight="700"
+    letter-spacing="-4"
+    text-anchor="middle"
+  ><tspan fill="#FFFFFF">Ozon Shopping </tspan><tspan fill="url(#mcpGradient)">MCP</tspan></text>
+
+  <rect x="220" y="352" width="840" height="4" rx="2" fill="#FFFFFF" opacity="0.16"/>
+  <rect x="220" y="352" width="328" height="4" rx="2" fill="url(#barGradient)"/>
+
+  <text
+    x="640"
+    y="430"
+    fill="#FFFFFF"
+    opacity="0.84"
+    font-family="SFMono-Regular, Menlo, Consolas, monospace"
+    font-size="23"
+    font-weight="500"
+    letter-spacing="0"
+    text-anchor="middle"
+  >Search products · Compare prices · Read reviews</text>
+</svg>
