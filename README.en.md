@@ -8,32 +8,32 @@
 [![CI](https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Let your AI research Ozon products for you.** Ozon Shopping MCP is an unofficial, local-first MCP server
-that searches products, opens current product cards, and reads reviews without Seller API credentials.
+**Compare Ozon products with your AI agent.** Ozon Shopping MCP turns search results, product cards, and
+reviews into tools your MCP client can use — locally, without Seller API credentials or dozens of open tabs.
 
-It is a buyer-side, read-only tool: it does not manage a seller cabinet, cart, orders, or customer account.
-The browser session stays on your machine.
+The server is read-only: it does not manage a seller cabinet, cart, orders, or customer account. The browser
+session stays on your machine.
 
-> **Alpha:** Ozon has no public buyer API. Its internal endpoints and anti-automation behavior can change
-> without notice.
+> **Alpha:** Ozon does not offer a public buyer API, so the project uses internal website endpoints. They
+> and Ozon's anti-automation behavior can change without notice.
 
 ## Features
 
-- search sorted by popularity, price, rating, recency, or discount;
-- minimum and maximum price filters;
-- current prices, availability, ratings, review counts, sellers, images, and characteristics;
-- recent reviews with pros, cons, and scores;
-- a protected local session and serialized, rate-limited requests.
+- find products sorted by popularity, price, rating, recency, or discount;
+- narrow results to a chosen price range;
+- collect current prices, availability, ratings, sellers, images, and characteristics;
+- break down recent reviews, scores, pros, and cons;
+- run locally through a protected session with serialized, rate-limited requests.
 
 ## Quick start
 
-Requires Node.js 24 LTS or newer and Google Chrome. First, create a local Ozon session once:
+Requires Node.js 24 LTS or newer and Google Chrome. Set up a local Ozon session with one command:
 
 ```bash
 npx -y ozon-shopping-mcp@latest setup
 ```
 
-Connect the server to Codex:
+Add the server to Codex:
 
 ```bash
 codex mcp add ozon-shopping -- npx -y ozon-shopping-mcp@latest serve
@@ -52,20 +52,20 @@ For another MCP client, use the equivalent stdio configuration:
 }
 ```
 
-If Ozon presents an interactive check, complete it in the opened window. After setup, normal requests run
-in headless Chrome without opening a visible browser.
+Ozon may present an interactive check during the first setup. Afterwards, requests run in headless Chrome
+without opening a visible browser.
 
 ## Example prompt
 
 ```text
 Find five popular wireless mice on Ozon under RUB 4,000.
-Open their product cards and keep models rated at least 4.7 with a meaningful number of reviews.
+Open their product cards and keep models rated at least 4.7 with at least 300 reviews.
 Compare the current price, availability, seller, key characteristics, and the pros and cons
-from recent reviews. Use data for my current region.
-Recommend the best option for a laptop and explain the choice.
+from recent reviews. Use prices and availability from my current session.
+Recommend the best option for everyday laptop work and explain the choice.
 ```
 
-The agent builds the workflow itself: search → candidate product cards → reviews → final comparison.
+One prompt drives the whole workflow: search → candidate product cards → reviews → final comparison.
 
 ## Tools
 
@@ -105,8 +105,8 @@ npm run check
 npm run build
 ```
 
-See [docs/architecture.md](docs/architecture.md) and [CONTRIBUTING.md](CONTRIBUTING.md). The initial version
-was developed with AI assistance; the maintainer remains responsible for the code and releases.
+See [docs/architecture.md](docs/architecture.md) for the design and [CONTRIBUTING.md](CONTRIBUTING.md) to
+contribute.
 
 ## License
 
