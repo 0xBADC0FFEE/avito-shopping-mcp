@@ -1,12 +1,14 @@
 export interface SearchItem {
-  sku: string;
+  article: number;
   name: string | null;
+  brand: string | null;
   price: number;
   oldPrice: number | null;
-  discount: string | null;
+  discountPercent: number | null;
   rating: number | null;
   reviewCount: number | null;
-  url: string | null;
+  seller: string | null;
+  url: string;
   image: string | null;
 }
 
@@ -21,22 +23,24 @@ export interface SearchResult {
 export interface Seller {
   name: string;
   rating: number | null;
-  url: string | null;
+  url: string;
 }
 
 export interface ProductDetails {
-  sku: string | null;
+  article: number;
   name: string | null;
-  url: string | null;
+  brand: string | null;
+  category: string | null;
+  url: string;
   price: number | null;
-  regularPrice: number | null;
   oldPrice: number | null;
-  available: boolean | null;
+  available: boolean;
   rating: number | null;
   reviewCount: number | null;
   seller: Seller | null;
   images: string[];
   characteristics: Record<string, string>;
+  description: string | null;
   pricingContext: string;
 }
 
@@ -46,9 +50,9 @@ export interface ProductReview {
   comment: string;
   pros: string;
   cons: string;
+  variant: string | null;
   date: string | null;
   useful: number | null;
-  purchased: boolean | null;
   hasPhotos: boolean;
 }
 

@@ -2,14 +2,17 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, LaunchOptions, Page } from "playwright";
 
 import type { RuntimeConfig } from "./config.js";
-import { OzonMcpError } from "./errors.js";
+import { WbMcpError } from "./errors.js";
 import { SerialQueue } from "./serial-queue.js";
 import { SessionStore } from "./session-store.js";
 import type { PersistedSession } from "./session-store.js";
+import { isAllowedApiUrl, regionQuery, SESSION_PROBE_URL, WB_HOME_URL } from "./wb-api.js";
 
-const HOME_URL = "https://www.ozon.ru/";
-const API_BASE_URL = "https://www.ozon.ru/api/composer-api.bx/page/json/v2?url=";
-const SESSION_PROBE_PATH = "/search/?text=ozon&from_global=true";
+// Same-origin API calls are rejected by the anti-bot layer without this id as the `deviceid` header.
+const DEVICE_ID_STORAGE_KEY = "wbx__sessionID";
+const GEO_DATA_STORAGE_KEY = "geo-data-v1-0";
+// 498 is the anti-bot "challenge required" status.
+const SESSION_REJECTED_STATUSES = new Set([401, 403, 498]);
 
 interface RawApiResponse {
   status: number;
@@ -32,7 +35,7 @@ export interface LiveSessionCheck {
 
 type ProgressReporter = (message: string) => void;
 
-export class OzonBrowserSession {
+export class WbBrowserSession {
   private readonly store: SessionStore;
   private readonly queue = new SerialQueue();
   private browser: Browser | undefined;
@@ -47,7 +50,7 @@ export class OzonBrowserSession {
 
   async setup(timeoutMs = 120_000, report: ProgressReporter = () => undefined): Promise<SetupResult> {
     await this.close();
-    report("Opening a temporary Chrome window for Ozon session setup…");
+    report("Opening a temporary Chrome window for Wildberries session setup…");
 
     const browser = await this.launch(false);
     const context = await browser.newContext({
@@ -57,7 +60,7 @@ export class OzonBrowserSession {
     const page = await context.newPage();
 
     try {
-      await page.goto(HOME_URL, {
+      await page.goto(WB_HOME_URL, {
         waitUntil: "domcontentloaded",
         timeout: this.config.navigationTimeoutMs,
       });
@@ -66,11 +69,11 @@ export class OzonBrowserSession {
       let lastStatus: number | undefined;
       while (Date.now() < deadline) {
         if (page.isClosed()) {
-          throw new OzonMcpError("REQUEST_FAILED", "The setup browser window was closed before Ozon became ready.");
+          throw new WbMcpError("REQUEST_FAILED", "The setup browser window was closed before Wildberries became ready.");
         }
 
         await page.waitForTimeout(1_500);
-        const probe = await this.rawApiRequest(page, SESSION_PROBE_PATH);
+        const probe = await this.rawApiRequest(page, SESSION_PROBE_URL);
         lastStatus = probe.status || lastStatus;
         if (probe.status === 200) {
           const createdAt = new Date().toISOString();
@@ -84,7 +87,7 @@ export class OzonBrowserSession {
             storageState,
           };
           await this.store.save(session);
-          report("Ozon session is ready and stored locally.");
+          report("Wildberries session is ready and stored locally.");
           return {
             createdAt,
             browserChannel: this.config.browserChannel,
@@ -94,9 +97,9 @@ export class OzonBrowserSession {
         }
       }
 
-      throw new OzonMcpError(
-        "OZON_BLOCKED",
-        `Ozon did not provide a usable session within ${Math.ceil(timeoutMs / 1000)} seconds${lastStatus ? ` (last HTTP status: ${lastStatus})` : ""}.`,
+      throw new WbMcpError(
+        "WB_BLOCKED",
+        `Wildberries did not provide a usable session within ${Math.ceil(timeoutMs / 1000)} seconds${lastStatus ? ` (last HTTP status: ${lastStatus})` : ""}.`,
       );
     } finally {
       await context.close().catch(() => undefined);
@@ -104,47 +107,69 @@ export class OzonBrowserSession {
     }
   }
 
-  async requestJson(path: string): Promise<unknown> {
+  async requestJson(url: string): Promise<unknown> {
+    if (!isAllowedApiUrl(url)) {
+      throw new WbMcpError("REQUEST_FAILED", "Refusing to request a host outside Wildberries.");
+    }
+
     return this.queue.run(async () => {
       const page = await this.ensureHeadlessPage();
       await this.waitForRequestSlot();
-      const response = await this.rawApiRequest(page, path);
+      const response = await this.rawApiRequest(page, url);
       this.lastRequestAt = Date.now();
       this.armIdleTimer();
 
-      if (response.status === 401 || response.status === 403 || response.status === 307) {
+      if (SESSION_REJECTED_STATUSES.has(response.status)) {
         await this.close();
-        throw new OzonMcpError(
+        throw new WbMcpError(
           "SESSION_EXPIRED",
-          `Ozon rejected the saved browser session with HTTP ${response.status}. Run \`ozon-shopping-mcp setup\` again.`,
+          `Wildberries rejected the saved browser session with HTTP ${response.status}. Run \`wb-shopping-mcp setup\` again.`,
         );
       }
       if (response.status !== 200) {
-        throw new OzonMcpError(
+        throw new WbMcpError(
           "REQUEST_FAILED",
           response.requestError
-            ? `Ozon request failed: ${response.requestError}`
-            : `Ozon returned unexpected HTTP ${response.status}.`,
+            ? `Wildberries request failed: ${response.requestError}`
+            : `Wildberries returned unexpected HTTP ${response.status}.`,
         );
       }
 
       try {
         return JSON.parse(response.text) as unknown;
       } catch (error) {
-        throw new OzonMcpError("OZON_RESPONSE_INVALID", "Ozon returned a response that is not valid JSON.", {
+        throw new WbMcpError("WB_RESPONSE_INVALID", "Wildberries returned a response that is not valid JSON.", {
           cause: error,
         });
       }
     });
   }
 
+  /**
+   * Reads the delivery region selected in the saved session; prices and stock depend on it.
+   * @returns API query parameters for currency and delivery destination.
+   */
+  async regionQuery(): Promise<string> {
+    return this.queue.run(async () => {
+      const page = await this.ensureHeadlessPage();
+      const xinfo = await page.evaluate((key) => {
+        try {
+          return (JSON.parse(localStorage.getItem(key) ?? "null") as { data?: { xinfo?: unknown } } | null)?.data?.xinfo;
+        } catch {
+          return undefined;
+        }
+      }, GEO_DATA_STORAGE_KEY);
+      return regionQuery(xinfo);
+    });
+  }
+
   async checkLive(): Promise<LiveSessionCheck> {
     try {
       const page = await this.ensureHeadlessPage();
-      const response = await this.rawApiRequest(page, SESSION_PROBE_PATH);
+      const response = await this.rawApiRequest(page, SESSION_PROBE_URL);
       this.armIdleTimer();
       if (response.status === 200) return { ok: true, status: 200 };
-      return { ok: false, status: response.status, error: `Ozon returned HTTP ${response.status}` };
+      return { ok: false, status: response.status, error: `Wildberries returned HTTP ${response.status}` };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return { ok: false, error: message };
@@ -192,9 +217,9 @@ export class OzonBrowserSession {
       });
       return browser;
     } catch (error) {
-      throw new OzonMcpError(
+      throw new WbMcpError(
         "BROWSER_UNAVAILABLE",
-        `Could not launch ${this.config.browserChannel}. Install the browser or set OZON_MCP_BROWSER_CHANNEL/OZON_MCP_EXECUTABLE_PATH.`,
+        `Could not launch ${this.config.browserChannel}. Install the browser or set WB_MCP_BROWSER_CHANNEL/WB_MCP_EXECUTABLE_PATH.`,
         { cause: error },
       );
     }
@@ -215,18 +240,18 @@ export class OzonBrowserSession {
         storageState: saved.storageState,
       });
       const page = await context.newPage();
-      await page.goto(HOME_URL, {
+      await page.goto(WB_HOME_URL, {
         waitUntil: "domcontentloaded",
         timeout: this.config.navigationTimeoutMs,
       });
       await page.waitForTimeout(1_000);
 
-      const probe = await this.rawApiRequest(page, SESSION_PROBE_PATH);
+      const probe = await this.rawApiRequest(page, SESSION_PROBE_URL);
       if (probe.status !== 200) {
         await context.close().catch(() => undefined);
-        throw new OzonMcpError(
+        throw new WbMcpError(
           "SESSION_EXPIRED",
-          `The saved Ozon session is no longer accepted (HTTP ${probe.status}). Run \`ozon-shopping-mcp setup\` again.`,
+          `The saved Wildberries session is no longer accepted (HTTP ${probe.status}). Run \`wb-shopping-mcp setup\` again.`,
         );
       }
 
@@ -241,18 +266,17 @@ export class OzonBrowserSession {
     }
   }
 
-  private async rawApiRequest(page: Page, path: string): Promise<RawApiResponse> {
-    const url = `${API_BASE_URL}${encodeURIComponent(path)}`;
+  private async rawApiRequest(page: Page, url: string): Promise<RawApiResponse> {
     const timeoutMs = this.config.requestTimeoutMs;
     return page.evaluate(
-      async ({ requestUrl, timeout }) => {
+      async ({ requestUrl, timeout, deviceIdKey }) => {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeout);
+        const headers: Record<string, string> = { accept: "application/json" };
+        const deviceId = localStorage.getItem(deviceIdKey);
+        if (deviceId && new URL(requestUrl).origin === location.origin) headers.deviceid = deviceId;
         try {
-          const response = await fetch(requestUrl, {
-            headers: { accept: "application/json" },
-            signal: controller.signal,
-          });
+          const response = await fetch(requestUrl, { headers, signal: controller.signal });
           return { status: response.status, text: await response.text() };
         } catch (error) {
           return {
@@ -264,7 +288,7 @@ export class OzonBrowserSession {
           clearTimeout(timer);
         }
       },
-      { requestUrl: url, timeout: timeoutMs },
+      { requestUrl: url, timeout: timeoutMs, deviceIdKey: DEVICE_ID_STORAGE_KEY },
     );
   }
 

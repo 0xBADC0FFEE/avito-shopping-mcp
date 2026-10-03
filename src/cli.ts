@@ -3,7 +3,7 @@
 import { loadConfig } from "./config.js";
 import { safeError } from "./errors.js";
 import { serve } from "./mcp-server.js";
-import { OzonClient } from "./ozon-client.js";
+import { WbClient } from "./wb-client.js";
 import { VERSION } from "./version.js";
 
 function timeoutArgument(args: string[]): number {
@@ -18,19 +18,19 @@ function timeoutArgument(args: string[]): number {
 }
 
 function printHelp(): void {
-  console.log(`ozon-shopping-mcp ${VERSION}
+  console.log(`wb-shopping-mcp ${VERSION}
 
 Usage:
-  ozon-shopping-mcp setup [--timeout 120]  Create or refresh the local Ozon session
-  ozon-shopping-mcp doctor                Verify configuration and the saved session
-  ozon-shopping-mcp serve                 Run the MCP server over stdio
-  ozon-shopping-mcp help                  Show this help
+  wb-shopping-mcp setup [--timeout 120]  Create or refresh the local Wildberries session
+  wb-shopping-mcp doctor                Verify configuration and the saved session
+  wb-shopping-mcp serve                 Run the MCP server over stdio
+  wb-shopping-mcp help                  Show this help
 `);
 }
 
 async function main(): Promise<void> {
   const command = process.argv[2] ?? "serve";
-  const client = new OzonClient(loadConfig());
+  const client = new WbClient(loadConfig());
 
   if (command === "setup") {
     const result = await client.setup(timeoutArgument(process.argv.slice(3)) * 1_000, (message) => console.error(message));

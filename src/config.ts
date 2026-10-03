@@ -27,32 +27,32 @@ function positiveInteger(name: string, fallback: number): number {
 
 function defaultStateDir(): string {
   if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Application Support", "ozon-shopping-mcp");
+    return join(homedir(), "Library", "Application Support", "wb-shopping-mcp");
   }
   if (process.platform === "win32") {
-    return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "ozon-shopping-mcp");
+    return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "wb-shopping-mcp");
   }
-  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "ozon-shopping-mcp");
+  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "wb-shopping-mcp");
 }
 
 function browserChannel(): BrowserChannel {
-  const value = process.env.OZON_MCP_BROWSER_CHANNEL ?? "chrome";
+  const value = process.env.WB_MCP_BROWSER_CHANNEL ?? "chrome";
   if (value === "chrome" || value === "chromium" || value === "msedge") return value;
-  throw new Error("OZON_MCP_BROWSER_CHANNEL must be chrome, chromium, or msedge");
+  throw new Error("WB_MCP_BROWSER_CHANNEL must be chrome, chromium, or msedge");
 }
 
 export function loadConfig(): RuntimeConfig {
-  const stateDir = resolve(process.env.OZON_MCP_STATE_DIR ?? defaultStateDir());
-  const executablePath = process.env.OZON_MCP_EXECUTABLE_PATH?.trim();
+  const stateDir = resolve(process.env.WB_MCP_STATE_DIR ?? defaultStateDir());
+  const executablePath = process.env.WB_MCP_EXECUTABLE_PATH?.trim();
 
   return {
     browserChannel: browserChannel(),
     ...(executablePath ? { executablePath: resolve(executablePath) } : {}),
     stateDir,
     stateFile: join(stateDir, "session.json"),
-    requestTimeoutMs: positiveInteger("OZON_MCP_REQUEST_TIMEOUT_MS", 30_000),
-    minimumRequestIntervalMs: positiveInteger("OZON_MCP_MIN_REQUEST_INTERVAL_MS", 750),
-    idleTimeoutMs: positiveInteger("OZON_MCP_IDLE_TIMEOUT_MS", 5 * 60_000),
-    navigationTimeoutMs: positiveInteger("OZON_MCP_NAVIGATION_TIMEOUT_MS", 90_000),
+    requestTimeoutMs: positiveInteger("WB_MCP_REQUEST_TIMEOUT_MS", 30_000),
+    minimumRequestIntervalMs: positiveInteger("WB_MCP_MIN_REQUEST_INTERVAL_MS", 750),
+    idleTimeoutMs: positiveInteger("WB_MCP_IDLE_TIMEOUT_MS", 5 * 60_000),
+    navigationTimeoutMs: positiveInteger("WB_MCP_NAVIGATION_TIMEOUT_MS", 90_000),
   };
 }

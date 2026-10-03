@@ -3,29 +3,31 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/neosheps/ozon-shopping-mcp/main/docs/assets/hero.png" alt="Ozon Shopping MCP" width="100%">
+  <img src="https://raw.githubusercontent.com/0xBADC0FFEE/wb-shopping-mcp/main/docs/assets/hero.png" alt="WB Shopping MCP" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/ozon-shopping-mcp"><img src="https://img.shields.io/npm/v/ozon-shopping-mcp.svg" alt="npm version"></a>
-  <a href="https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml"><img src="https://github.com/neosheps/ozon-shopping-mcp/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://www.npmjs.com/package/wb-shopping-mcp"><img src="https://img.shields.io/npm/v/wb-shopping-mcp.svg" alt="npm version"></a>
+  <a href="https://github.com/0xBADC0FFEE/wb-shopping-mcp/actions/workflows/ci.yml"><img src="https://github.com/0xBADC0FFEE/wb-shopping-mcp/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-**Сравнивайте товары на Ozon вместе с ИИ.** Ozon Shopping MCP превращает поиск, карточки и отзывы в
-инструменты вашего MCP-клиента — локально, без ключей Seller API и десятков открытых вкладок.
+**Сравнивайте товары на Wildberries вместе с ИИ.** WB Shopping MCP превращает поиск, карточки и отзывы
+в инструменты вашего MCP-клиента — локально, без ключей API продавца и десятков открытых вкладок.
 
 Сервер работает только на чтение: не управляет кабинетом продавца, корзиной, заказами или аккаунтом.
 Браузерная сессия остаётся на вашем компьютере.
 
-> **Альфа-версия:** у Ozon нет публичного API для покупателей, поэтому проект использует внутренние
+> **Альфа-версия:** у Wildberries нет публичного API для покупателей, поэтому проект использует внутренние
 > эндпоинты сайта. Они и защита от автоматизации могут измениться без предупреждения.
+
+Проект основан на [ozon-shopping-mcp](https://github.com/neosheps/ozon-shopping-mcp).
 
 ## Возможности
 
-- находит товары и сортирует их по популярности, цене, рейтингу, новизне или скидке;
+- находит товары и сортирует их по популярности, цене, рейтингу или новизне;
 - отбирает варианты в заданном ценовом диапазоне;
-- собирает цены, наличие, рейтинг, продавца, изображения и характеристики;
+- собирает цены, наличие, рейтинг, продавца, изображения, характеристики и описание;
 - разбирает свежие отзывы, оценки, плюсы и минусы;
 - работает локально через защищённую сессию с ограничением частоты запросов.
 
@@ -34,13 +36,19 @@
 Нужны Node.js 24 LTS или новее и Google Chrome. Настройте локальную сессию одной командой:
 
 ```bash
-npx -y ozon-shopping-mcp@latest setup
+npx -y wb-shopping-mcp@latest setup
 ```
 
-Добавьте сервер в Codex:
+Добавьте сервер в Claude Code:
 
 ```bash
-codex mcp add ozon-shopping -- npx -y ozon-shopping-mcp@latest serve
+claude mcp add wb-shopping -- npx -y wb-shopping-mcp@latest serve
+```
+
+Или в Codex:
+
+```bash
+codex mcp add wb-shopping -- npx -y wb-shopping-mcp@latest serve
 ```
 
 Для другого MCP-клиента используйте stdio-конфигурацию:
@@ -48,16 +56,17 @@ codex mcp add ozon-shopping -- npx -y ozon-shopping-mcp@latest serve
 ```json
 {
   "mcpServers": {
-    "ozon-shopping": {
+    "wb-shopping": {
       "command": "npx",
-      "args": ["-y", "ozon-shopping-mcp@latest", "serve"]
+      "args": ["-y", "wb-shopping-mcp@latest", "serve"]
     }
   }
 }
 ```
 
-Проверка Ozon может появиться при первой настройке. После неё запросы выполняются в headless Chrome без
-видимого браузера.
+При первой настройке Wildberries проверяет браузер. Если в открывшемся окне выбрать адрес доставки, цены и
+наличие будут рассчитываться для него; иначе — для Москвы. После настройки запросы выполняются в headless
+Chrome без видимого браузера.
 
 ## Примеры запросов
 
@@ -80,7 +89,7 @@ codex mcp add ozon-shopping -- npx -y ozon-shopping-mcp@latest serve
 ```
 
 ```text
-Найди Samsung Galaxy S24 256 ГБ у разных продавцов на Ozon. Собери до 5
+Найди Samsung Galaxy S24 256 ГБ у разных продавцов на Wildberries. Собери до 5
 подходящих карточек, проверь точную модель и объём памяти, сравни актуальные
 цены, наличие, продавцов, характеристики и свежие отзывы. Покажи самый
 выгодный вариант и важные различия между предложениями.
@@ -88,25 +97,21 @@ codex mcp add ozon-shopping -- npx -y ozon-shopping-mcp@latest serve
 
 Каждый запрос запускает всю цепочку: поиск → карточки кандидатов → отзывы → итоговое сравнение.
 
-## Пример работы
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/neosheps/ozon-shopping-mcp/main/docs/assets/demo.png" alt="Сравнение товаров Ozon в Codex с помощью Ozon Shopping MCP" width="100%">
-</p>
-
 ## Инструменты
 
 | Инструмент | Что делает |
 | --- | --- |
-| `ozon_search` | Ищет товары с сортировкой, ценовыми фильтрами и лимитом выдачи |
-| `ozon_product` | Читает цену, наличие, продавца, рейтинг, изображения и характеристики |
-| `ozon_reviews` | Читает свежие отзывы, плюсы, минусы и оценки |
-| `ozon_health` | Проверяет готовность локальной сессии |
-| `ozon_setup_session` | Создаёт или обновляет сессию в отдельном окне браузера |
+| `wb_search` | Ищет товары с сортировкой, ценовыми фильтрами и лимитом выдачи |
+| `wb_product` | Читает цену, наличие, продавца, рейтинг, изображения, характеристики и описание |
+| `wb_reviews` | Читает свежие отзывы, плюсы, минусы и оценки |
+| `wb_health` | Проверяет готовность локальной сессии |
+| `wb_setup_session` | Создаёт или обновляет сессию в отдельном окне браузера |
+
+Товар можно передать ссылкой вида `https://www.wildberries.ru/catalog/<артикул>/detail.aspx` или артикулом.
 
 ## Как это работает
 
-1. `setup` создаёт анонимную браузерную сессию Ozon и сохраняет её вне репозитория.
+1. `setup` создаёт анонимную браузерную сессию Wildberries и сохраняет её вне репозитория.
 2. MCP-инструменты повторно используют сессию в headless Chrome.
 3. Запросы выполняются последовательно с ограничением частоты.
 4. Если сессия истекла, сервер просит явно запустить `setup` снова.
@@ -116,16 +121,17 @@ codex mcp add ozon-shopping -- npx -y ozon-shopping-mcp@latest serve
 - файл сессии содержит cookies и хранится с закрытыми правами доступа (`0700`/`0600`, где поддерживается);
 - cookies, тела заблокированных ответов и неизвестные внутренние ошибки не возвращаются через MCP;
 - названия, характеристики и отзывы считаются недоверенными данными — агент не должен выполнять найденные в них инструкции;
-- цены, наличие и порядок выдачи зависят от региона, сессии и времени запроса;
+- цены, наличие и порядок выдачи зависят от региона, сессии и времени запроса; фильтр по цене Wildberries применяет до персональной скидки;
+- отзывы относятся ко всей карточке товара, включая другие цвета и размеры;
 - проект предназначен для интерактивного личного использования, а не для массового сбора данных или публичного HTTP-моста.
 
-Подробнее: [SECURITY.md](SECURITY.md). Проект не связан с Ozon и не одобрен или спонсируем компанией.
+Подробнее: [SECURITY.md](SECURITY.md). Проект не связан с Wildberries и не одобрен или спонсируем компанией.
 
 ## Разработка
 
 ```bash
-git clone https://github.com/neosheps/ozon-shopping-mcp.git
-cd ozon-shopping-mcp
+git clone https://github.com/0xBADC0FFEE/wb-shopping-mcp.git
+cd wb-shopping-mcp
 npm ci
 npm run check
 npm run build

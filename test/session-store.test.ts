@@ -14,7 +14,7 @@ afterEach(async () => {
 
 describe("SessionStore", () => {
   it("writes parseable session state with private permissions", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "ozon-shopping-mcp-"));
+    const directory = await mkdtemp(join(tmpdir(), "wb-shopping-mcp-"));
     temporaryDirectories.push(directory);
     const path = join(directory, "nested", "session.json");
     const store = new SessionStore(path);
@@ -33,7 +33,7 @@ describe("SessionStore", () => {
   });
 
   it.skipIf(process.platform === "win32")("rejects session state readable by other users", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "ozon-shopping-mcp-"));
+    const directory = await mkdtemp(join(tmpdir(), "wb-shopping-mcp-"));
     temporaryDirectories.push(directory);
     const path = join(directory, "session.json");
     const store = new SessionStore(path);

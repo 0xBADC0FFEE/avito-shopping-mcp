@@ -6,11 +6,11 @@ Please do not open a public issue for a suspected vulnerability or accidental cr
 Use GitHub's private vulnerability reporting for this repository instead.
 
 Include the affected version, reproduction steps, impact, and any suggested mitigation. Do not include
-live Ozon cookies, account data, private keys, or tokens in the report.
+live Wildberries cookies, account data, private keys, or tokens in the report.
 
 ## Security model
 
-`ozon-shopping-mcp` is a local stdio server for interactive, read-only product research. It is not
+`wb-shopping-mcp` is a local stdio server for interactive, read-only product research. It is not
 designed to run as a public network service or as a high-volume crawler.
 
 - Browser state is stored outside the repository with private filesystem permissions.

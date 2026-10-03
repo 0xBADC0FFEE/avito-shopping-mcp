@@ -1,20 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="500" viewBox="0 0 1600 500" role="img" aria-labelledby="title desc">
-  <title id="title">Ozon Shopping MCP</title>
-  <desc id="desc">Dark typographic banner with Ozon blue to magenta accents</desc>
+  <title id="title">WB Shopping MCP</title>
+  <desc id="desc">Dark typographic banner with Wildberries purple to magenta accents</desc>
   <defs>
-    <linearGradient id="mcpGradient" gradientUnits="userSpaceOnUse" x1="1028" y1="0" x2="1158" y2="0">
-      <stop offset="0" stop-color="#005BFF"/>
-      <stop offset="0.52" stop-color="#6C3BFF"/>
-      <stop offset="1" stop-color="#F91155"/>
+    <linearGradient id="mcpGradient" gradientUnits="userSpaceOnUse" x1="987" y1="0" x2="1112" y2="0">
+      <stop offset="0" stop-color="#7F3BDB"/>
+      <stop offset="0.52" stop-color="#A11AC9"/>
+      <stop offset="1" stop-color="#F5108F"/>
     </linearGradient>
     <linearGradient id="barGradient" gradientUnits="userSpaceOnUse" x1="260" y1="0" x2="680" y2="0">
-      <stop offset="0" stop-color="#005BFF"/>
-      <stop offset="0.52" stop-color="#6C3BFF"/>
-      <stop offset="1" stop-color="#F91155"/>
+      <stop offset="0" stop-color="#7F3BDB"/>
+      <stop offset="0.52" stop-color="#A11AC9"/>
+      <stop offset="1" stop-color="#F5108F"/>
     </linearGradient>
   </defs>
 
-  <rect width="1600" height="500" fill="#001A34"/>
+  <rect width="1600" height="500" fill="#160A26"/>
 
   <text
     x="800"
@@ -24,7 +24,7 @@
     font-weight="700"
     letter-spacing="-4"
     text-anchor="middle"
-  ><tspan fill="#FFFFFF">Ozon Shopping </tspan><tspan fill="url(#mcpGradient)">MCP</tspan></text>
+  ><tspan fill="#FFFFFF">WB Shopping </tspan><tspan fill="url(#mcpGradient)">MCP</tspan></text>
 
   <rect x="260" y="304" width="1080" height="4" rx="2" fill="#FFFFFF" opacity="0.16"/>
   <rect x="260" y="304" width="420" height="4" rx="2" fill="url(#barGradient)"/>
