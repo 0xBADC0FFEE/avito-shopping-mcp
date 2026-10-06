@@ -41,8 +41,9 @@ Requires Node.js 24 LTS or newer and Google Chrome. Set up a local session:
 npx avito-shopping-mcp setup
 ```
 
-A Chrome window opens on avito.ru. If Avito shows an access check, complete it in that window; the session is
-saved as soon as search starts answering. Afterwards, requests run in headless Chrome without a visible window.
+A Chrome window opens on avito.ru. If Avito shows an access check or a captcha, solve it yourself in that window;
+the session is saved as soon as search starts answering. If search answers with a restriction, `setup` does not
+retry on a timer: reload the page in the window and solve the captcha, and `setup` checks search once more. Afterwards, requests run in headless Chrome without a visible window.
 
 Add the server to Claude Code:
 
@@ -89,7 +90,7 @@ and characteristics, read the seller's 20 most recent reviews, and list any red 
 | `avito_search` | Search listings: city (default Moscow), sort, price range, page, and limit |
 | `avito_item` | Read a listing: price, description, characteristics, address, photos, date, views, seller |
 | `avito_seller_reviews` | Read the rating and recent reviews of a listing's seller |
-| `avito_health` | Check the local session; `live=true` runs one test search |
+| `avito_health` | Check the local session; `live=true` sends one lightweight request to Avito |
 | `avito_setup_session` | Create or refresh the session in a separate browser window |
 
 Pass a listing as `https://www.avito.ru/<city>/<category>/<slug>_<id>` or as a numeric id. Pass the city
@@ -102,8 +103,10 @@ Avito quickly restricts an IP address that sends many requests. Therefore:
 - requests run strictly one at a time, at least 5 seconds apart (`AVITO_MCP_MIN_REQUEST_INTERVAL_MS`) plus
   random jitter;
 - a search costs 1 request, a listing 1, seller reviews 2–3;
-- on `AVITO_RATE_LIMITED`, wait at least 20 minutes or run `npx avito-shopping-mcp setup` and pass the check
-  in the browser window; Avito bans sometimes last an hour or longer;
+- after `AVITO_RATE_LIMITED`, the server stops contacting Avito for 20 minutes and returns that error with the
+  remaining time; to resume sooner, run `npx avito-shopping-mcp setup` and solve the captcha in the browser
+  window, since a new session lifts the pause; Avito bans sometimes last an hour or longer;
+- invalid search input (empty or oversized query, minimum price above maximum) returns `INVALID_INPUT`;
 - VPNs, carrier-grade NAT, and frequent page reloads make a block more likely.
 
 ## How it works
