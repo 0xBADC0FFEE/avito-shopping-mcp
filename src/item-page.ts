@@ -127,7 +127,7 @@ function views(value: unknown): ItemViews | null {
 function seller(buyerItem: JsonObject): ItemSeller | null {
   const name = text(at(buyerItem, "seller", "name"));
   if (!name) return null;
-  const profileLink = text(at(buyerItem, "publicProfile", "link"));
+  const profileLink = text(at(buyerItem, "publicProfile", "link")) ?? text(at(buyerItem, "seller", "shopUrl"));
   return {
     name,
     isCompany: (boolean(at(buyerItem, "seller", "isCompany")) ?? boolean(buyerItem.isCompany)) === true,

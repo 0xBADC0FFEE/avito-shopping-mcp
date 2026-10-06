@@ -49,6 +49,16 @@ describe("readBuyerItem", () => {
     expect(parseItem({ ...buyerItem, ...change }, PAGE_URL).active).toBe(false);
   });
 
+  it("links a shop seller through its shop page when Avito omits the public profile", () => {
+    const shopItem = {
+      ...buyerItem,
+      publicProfile: null,
+      seller: { ...object(buyerItem.seller), shopUrl: "/brands/27696b66792f17b347ec073a8d1c2d93?page_from=from_item_header" },
+    };
+
+    expect(parseItem(shopItem, PAGE_URL).seller?.url).toBe("https://www.avito.ru/brands/27696b66792f17b347ec073a8d1c2d93");
+  });
+
   it("finds the seller key used by the reviews endpoint", () => {
     expect(parseSellerUserKey(buyerItem)).toBe("badabb72359d5efbfcfa34413989c41d0cef27381d6000072e45cd298ea3c607");
   });
