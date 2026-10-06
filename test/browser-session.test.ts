@@ -13,12 +13,13 @@ import { textFixture } from "./fixture.js";
 const MS_PER_MINUTE = 60_000;
 const PROBE_URL = "https://www.avito.ru/web/1/slocations?limit=1&q=x";
 
-const avito = vi.hoisted(() => ({ evaluate: vi.fn() }));
+const avito = vi.hoisted(() => ({ evaluate: vi.fn(), waitForLoadState: vi.fn(async () => undefined) }));
 
 vi.mock("playwright", () => {
   const page = {
     goto: async () => null,
     waitForTimeout: async () => undefined,
+    waitForLoadState: avito.waitForLoadState,
     waitForFunction: async () => undefined,
     isClosed: () => false,
     evaluate: avito.evaluate,
@@ -64,6 +65,7 @@ describe("AvitoBrowserSession rate-limit backoff", () => {
     session = new AvitoBrowserSession(config);
     vi.spyOn(Math, "random").mockReturnValue(0);
     avito.evaluate.mockReset();
+    avito.waitForLoadState.mockClear();
     avito.evaluate.mockResolvedValueOnce({ status: 429, text: textFixture("block-403-too-many-requests.json"), url: PROBE_URL });
   });
 
@@ -85,12 +87,32 @@ describe("AvitoBrowserSession rate-limit backoff", () => {
 
   it("reports a browser-side failure as a failed request with its reason", async () => {
     avito.evaluate.mockReset();
-    avito.evaluate.mockRejectedValueOnce(new Error("page.evaluate: Execution context was destroyed\nCall log: …"));
+    avito.evaluate.mockRejectedValueOnce(new Error("page.evaluate: Target page, context or browser has been closed\nCall log: …"));
 
     await expect(session.requestJson(PROBE_URL)).rejects.toMatchObject({
       code: "REQUEST_FAILED",
-      message: "Avito request failed: page.evaluate: Execution context was destroyed",
+      message: "Avito request failed: page.evaluate: Target page, context or browser has been closed",
     });
+  });
+
+  it("retries once after the page navigates away mid-request", async () => {
+    avito.evaluate.mockReset();
+    avito.evaluate
+      .mockRejectedValueOnce(new Error("page.evaluate: Execution context was destroyed, most likely because of a navigation"))
+      .mockResolvedValueOnce({ status: 200, text: "{}", url: PROBE_URL });
+
+    await expect(session.requestJson(PROBE_URL)).resolves.toEqual({});
+    expect(avito.evaluate).toHaveBeenCalledTimes(2);
+    expect(avito.waitForLoadState).toHaveBeenCalledWith("load", expect.anything());
+  });
+
+  it("waits for the home page network to go idle before the first request", async () => {
+    avito.evaluate.mockReset();
+    avito.waitForLoadState.mockRejectedValueOnce(new Error("Timeout exceeded"));
+    avito.evaluate.mockResolvedValueOnce({ status: 200, text: "{}", url: PROBE_URL });
+
+    await expect(session.requestJson(PROBE_URL)).resolves.toEqual({});
+    expect(avito.waitForLoadState).toHaveBeenCalledWith("networkidle", expect.anything());
   });
 
   it("resumes once a newer session is stored", async () => {

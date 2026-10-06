@@ -13,7 +13,10 @@ import type { PersistedSession } from "./session-store.js";
 const VIEWPORT = { width: 1440, height: 900 };
 const LOCALE = "ru-RU";
 const SETUP_TITLE_POLL_INTERVAL_MS = 2_000;
-const HOME_SETTLE_MS = 1_000;
+// Avito's home page keeps navigating after load; ad frames can keep the network busy indefinitely.
+const HOME_NETWORK_IDLE_TIMEOUT_MS = 5_000;
+const NAVIGATION_RECOVERY_TIMEOUT_MS = 5_000;
+const CONTEXT_LOST_ERROR = /Execution context was destroyed|because of a navigation/i;
 const CHALLENGE_TIMEOUT_MS = 20_000;
 const MAX_REQUEST_JITTER_MS = 2_000;
 const SETUP_COMMAND = "`avito-shopping-mcp setup`";
@@ -329,7 +332,7 @@ export class AvitoBrowserSession {
       });
       const page = await context.newPage();
       await this.openHome(page);
-      await page.waitForTimeout(HOME_SETTLE_MS);
+      await page.waitForLoadState("networkidle", { timeout: HOME_NETWORK_IDLE_TIMEOUT_MS }).catch(() => undefined);
 
       this.browser = browser;
       this.context = context;
@@ -350,7 +353,13 @@ export class AvitoBrowserSession {
     try {
       return await this.fetchInPage(page, url, contentType);
     } catch (error) {
-      return { status: 0, text: "", url, requestError: firstLine(error) };
+      if (!CONTEXT_LOST_ERROR.test(firstLine(error))) return failedRequest(url, error);
+    }
+    await page.waitForLoadState("load", { timeout: NAVIGATION_RECOVERY_TIMEOUT_MS }).catch(() => undefined);
+    try {
+      return await this.fetchInPage(page, url, contentType);
+    } catch (error) {
+      return failedRequest(url, error);
     }
   }
 
@@ -439,6 +448,10 @@ async function waitForPageLoad(page: Page, deadline: number): Promise<boolean> {
     if (error instanceof errors.TimeoutError) return false;
     throw error;
   }
+}
+
+function failedRequest(url: string, error: unknown): RawResponse {
+  return { status: 0, text: "", url, requestError: firstLine(error) };
 }
 
 function firstLine(error: unknown): string {
