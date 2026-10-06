@@ -16,6 +16,8 @@ export interface SearchInput {
   limit?: number | undefined;
 }
 
+type SellerReviews = Pick<SellerReviewsResult, "rating" | "reviews">;
+
 export const MAX_QUERY_LENGTH = 200;
 export const MAX_ITEM_INPUT_LENGTH = 2_048;
 export const DEFAULT_SEARCH_LIMIT = 20;
@@ -26,6 +28,7 @@ export const MIN_SETUP_TIMEOUT_SECONDS = 30;
 export const DEFAULT_SETUP_TIMEOUT_SECONDS = 120;
 export const MAX_SETUP_TIMEOUT_SECONDS = 300;
 const MS_PER_SECOND = 1_000;
+const NO_REVIEWS: SellerReviews = { rating: null, reviews: [] };
 const ITEM_HOSTS = new Set(["avito.ru", "www.avito.ru", "m.avito.ru"]);
 const ITEM_PATH = /^\/(?:(\d+)|[^/]+\/[^/]+\/[^/]+_(\d+))\/?$/;
 const CYRILLIC = /\p{Script=Cyrillic}/u;
@@ -97,20 +100,14 @@ export class AvitoClient {
   async sellerReviews(item: string, limit = DEFAULT_REVIEWS_LIMIT): Promise<SellerReviewsResult> {
     const { buyerItem, url } = await this.loadBuyerItem(parseItemId(item));
     const listing = parseItem(buyerItem, url);
-    let page = parseRatingsPage(await this.session.requestJson(sellerRatingsUrl(parseSellerUserKey(buyerItem))));
-    const summary = page.summary;
-    const reviews: SellerReview[] = [...page.reviews];
-    while (reviews.length < limit && page.nextPage !== null && page.reviews.length > 0) {
-      page = parseRatingsPage(await this.session.requestJson(apiUrl(page.nextPage)));
-      reviews.push(...page.reviews);
-    }
-    const selected = reviews.slice(0, limit);
+    const userKey = parseSellerUserKey(buyerItem);
+    const { rating, reviews } = userKey === null ? NO_REVIEWS : await this.loadReviews(userKey, limit);
     return {
       listing: { id: listing.id, title: listing.title, url: listing.url },
       seller: listing.seller,
-      rating: summary,
-      count: selected.length,
-      reviews: selected,
+      rating,
+      count: reviews.length,
+      reviews,
     };
   }
 
@@ -147,6 +144,17 @@ export class AvitoClient {
     if (!location) throw new AvitoMcpError("LOCATION_NOT_FOUND", `Avito knows no location named "${name.trim()}".`);
     this.locations.set(key, location);
     return location;
+  }
+
+  private async loadReviews(userKey: string, limit: number): Promise<SellerReviews> {
+    let page = parseRatingsPage(await this.session.requestJson(sellerRatingsUrl(userKey)));
+    const rating = page.summary;
+    const reviews: SellerReview[] = [...page.reviews];
+    while (reviews.length < limit && page.nextPage !== null && page.reviews.length > 0) {
+      page = parseRatingsPage(await this.session.requestJson(apiUrl(page.nextPage)));
+      reviews.push(...page.reviews);
+    }
+    return { rating, reviews: reviews.slice(0, limit) };
   }
 
   private async loadBuyerItem(id: number) {

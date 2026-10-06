@@ -1,6 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { MAX_QUERY_LENGTH, parseItemId, validSearchQuery } from "../src/avito-client.js";
+import { AvitoClient, MAX_QUERY_LENGTH, parseItemId, validSearchQuery } from "../src/avito-client.js";
+import type { RuntimeConfig } from "../src/config.js";
+import { at, object } from "../src/json-fields.js";
+import { itemPageHtml, jsonFixture } from "./fixture.js";
+
+const session = vi.hoisted(() => ({ requestHtml: vi.fn(), requestJson: vi.fn() }));
+
+vi.mock("../src/browser-session.js", () => ({
+  AvitoBrowserSession: class {
+    requestHtml = session.requestHtml;
+    requestJson = session.requestJson;
+  },
+}));
+
+const LISTING_URL = "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574";
 
 describe("parseItemId", () => {
   it("accepts listing ids and Avito listing URLs", () => {
@@ -37,5 +51,17 @@ describe("validSearchQuery", () => {
     { query: "   " },
   ])("rejects invalid input %#", (input) => {
     expect(() => validSearchQuery(input)).toThrow(expect.objectContaining({ code: "INVALID_INPUT" }));
+  });
+});
+
+describe("AvitoClient.sellerReviews", () => {
+  it("returns no reviews without calling the ratings endpoint when the seller has none", async () => {
+    const buyerItem = { ...object(at(jsonFixture("item-hydration-buyerItem.json"), "buyerItem")), rating: {} };
+    session.requestHtml.mockResolvedValue({ url: LISTING_URL, html: itemPageHtml(buyerItem) });
+
+    const result = await new AvitoClient({} as RuntimeConfig).sellerReviews("8457820574");
+
+    expect(result).toMatchObject({ listing: { id: 8_457_820_574 }, rating: null, count: 0, reviews: [] });
+    expect(session.requestJson).not.toHaveBeenCalled();
   });
 });

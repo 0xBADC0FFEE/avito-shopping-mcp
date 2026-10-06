@@ -2,14 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { htmlToText, parseItem, parseSellerUserKey, readBuyerItem } from "../src/item-page.js";
 import { at } from "../src/json-fields.js";
-import { jsonFixture } from "./fixture.js";
+import { itemPageHtml, jsonFixture } from "./fixture.js";
 
 const PAGE_URL = "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574";
-
-function itemPageHtml(buyerItem: unknown): string {
-  const state = { loaderData: { "catalog-or-main-or-item": { buyerItem } } };
-  return `<html><body><script>window.__staticRouterHydrationData = JSON.parse(${JSON.stringify(JSON.stringify(state))});</script></body></html>`;
-}
 
 describe("readBuyerItem", () => {
   const buyerItem = readBuyerItem(itemPageHtml(at(jsonFixture("item-hydration-buyerItem.json"), "buyerItem")));
@@ -51,7 +46,6 @@ describe("readBuyerItem", () => {
 
   it("names the missing path when the item lacks required fields", () => {
     expect(() => parseItem({ item: { id: 1 } }, PAGE_URL)).toThrow(/buyerItem\.item\.title/);
-    expect(() => parseSellerUserKey({})).toThrow(expect.objectContaining({ code: "AVITO_RESPONSE_INVALID" }));
   });
 });
 

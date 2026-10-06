@@ -56,8 +56,13 @@ export function parseItem(buyerItem: JsonObject, pageUrl: string): ItemDetails {
   };
 }
 
-export function parseSellerUserKey(buyerItem: JsonObject): string {
-  return required(text(at(buyerItem, "rating", "userKey")), `${BUYER_ITEM_PATH}.rating.userKey`);
+/**
+ * Finds the seller key used by the reviews endpoint.
+ * @param buyerItem Listing state from {@link readBuyerItem}.
+ * @returns The key, or `null` when Avito omits it because the seller has no reviews.
+ */
+export function parseSellerUserKey(buyerItem: JsonObject): string | null {
+  return text(at(buyerItem, "rating", "userKey"));
 }
 
 export function htmlToText(html: unknown): string | null {

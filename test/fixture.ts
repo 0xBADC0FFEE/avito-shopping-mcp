@@ -7,3 +7,8 @@ export function textFixture(name: string): string {
 export function jsonFixture(name: string): unknown {
   return JSON.parse(textFixture(name)) as unknown;
 }
+
+export function itemPageHtml(buyerItem: unknown): string {
+  const state = { loaderData: { "catalog-or-main-or-item": { buyerItem } } };
+  return `<html><body><script>window.__staticRouterHydrationData = JSON.parse(${JSON.stringify(JSON.stringify(state))});</script></body></html>`;
+}
