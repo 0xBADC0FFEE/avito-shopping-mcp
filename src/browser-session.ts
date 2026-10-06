@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, errors } from "playwright";
 import type { Browser, BrowserContext, LaunchOptions, Page } from "playwright";
 
 import { AVITO_HOME_URL, isAllowedRequestUrl, SESSION_PROBE_URL } from "./avito-api.js";
@@ -12,17 +12,18 @@ import type { PersistedSession } from "./session-store.js";
 
 const VIEWPORT = { width: 1440, height: 900 };
 const LOCALE = "ru-RU";
-const SETUP_POLL_INTERVAL_MS = 2_000;
-const SETUP_PROBE_INTERVAL_MS = 10_000;
+const SETUP_TITLE_POLL_INTERVAL_MS = 2_000;
 const HOME_SETTLE_MS = 1_000;
 const CHALLENGE_TIMEOUT_MS = 20_000;
 const MAX_REQUEST_JITTER_MS = 2_000;
 const SETUP_COMMAND = "`avito-shopping-mcp setup`";
+const SOLVE_IN_WINDOW_HINT = "Solve any captcha in the opened browser window yourself and keep the window open.";
+const MS_PER_SECOND = 1_000;
 const ACCEPT_HEADERS = { json: "application/json", html: "text/html" } as const;
 
 type ContentType = keyof typeof ACCEPT_HEADERS;
 
-type SetupOutcome = { ready: true } | { ready: false; lastStatus: number | undefined };
+type SetupOutcome = { ready: true } | { ready: false; lastProbe: ClassifiedResponse | undefined };
 
 interface RawResponse {
   status: number;
@@ -70,7 +71,7 @@ export class AvitoBrowserSession {
 
   async setup(timeoutMs: number, report: ProgressReporter = () => undefined): Promise<SetupResult> {
     await this.close();
-    report("Opening a temporary Chrome window for Avito session setup…");
+    report(`Opening a temporary Chrome window for Avito session setup. ${SOLVE_IN_WINDOW_HINT}`);
 
     const browser = await this.launch(false);
     const context = await browser.newContext({ viewport: VIEWPORT, locale: LOCALE });
@@ -78,16 +79,11 @@ export class AvitoBrowserSession {
 
     try {
       await this.openHome(page);
-      const outcome = await this.waitForUsableSession(page, timeoutMs, report);
-      if (outcome.ready) {
-        const result = await this.saveSession(page, context);
-        report("Avito session is ready and stored locally.");
-        return result;
-      }
-      throw new AvitoMcpError(
-        "AVITO_BLOCKED",
-        `Avito did not provide a usable session within ${Math.ceil(timeoutMs / 1000)} seconds${outcome.lastStatus ? ` (last HTTP status: ${outcome.lastStatus})` : ""}.`,
-      );
+      const outcome = await this.waitForUsableSession(page, Date.now() + timeoutMs, report);
+      if (!outcome.ready) throw setupTimeoutError(outcome.lastProbe, timeoutMs);
+      const result = await this.saveSession(page, context);
+      report("Avito session is ready and stored locally.");
+      return result;
     } finally {
       await context.close().catch(() => undefined);
       await browser.close().catch(() => undefined);
@@ -153,36 +149,40 @@ export class AvitoBrowserSession {
     await browser?.close().catch(() => undefined);
   }
 
-  private async waitForUsableSession(
-    page: Page,
-    timeoutMs: number,
-    report: ProgressReporter,
-  ): Promise<SetupOutcome> {
-    const deadline = Date.now() + timeoutMs;
-    let lastStatus: number | undefined;
-    let lastProbeAt = 0;
-    let reportedBlock = false;
-    while (Date.now() < deadline) {
-      await page.waitForTimeout(SETUP_POLL_INTERVAL_MS).catch(() => undefined);
-      if (page.isClosed()) {
-        throw new AvitoMcpError("REQUEST_FAILED", "The setup browser window was closed before Avito became ready.");
-      }
+  // Re-probing a throttled IP on a timer keeps it flagged, so after a failed probe
+  // only a page load caused by the user in the window triggers the next probe.
+  private async waitForUsableSession(page: Page, deadline: number, report: ProgressReporter): Promise<SetupOutcome> {
+    let lastProbe: ClassifiedResponse | undefined;
+    let challengeRetried = false;
+    while (await this.waitForAccessiblePage(page, deadline, report)) {
+      const response = await this.rawRequest(page, SESSION_PROBE_URL, "json");
+      lastProbe = { response, verdict: classifyResponse(response) };
+      if (lastProbe.verdict === "ok") return { ready: true };
 
-      if (isBlockPageTitle(await page.title().catch(() => ""))) {
-        if (!reportedBlock) report("Avito shows an access check. Complete it in the browser window to continue.");
-        reportedBlock = true;
+      if (lastProbe.verdict === "challenge" && !challengeRetried) {
+        challengeRetried = true;
+        report("Avito answered with a browser check; reloading the home page once.");
+        await this.openHome(page).catch(() => undefined);
         continue;
       }
-      if (Date.now() - lastProbeAt < SETUP_PROBE_INTERVAL_MS) continue;
-
-      lastProbeAt = Date.now();
-      const probe = await this.rawRequest(page, SESSION_PROBE_URL, "json");
-      if (classifyResponse(probe) === "ok") return { ready: true };
-      lastStatus = probe.status || lastStatus;
-      report(`Avito search answered HTTP ${probe.status}; reloading the home page.`);
-      await this.openHome(page).catch(() => undefined);
+      report(
+        `Avito search answered HTTP ${response.status}. Reload the Avito page in the opened window; ${SOLVE_IN_WINDOW_HINT} Setup checks again after the page reloads.`,
+      );
+      if (!(await waitForPageLoad(page, deadline))) break;
     }
-    return { ready: false, lastStatus };
+    return { ready: false, lastProbe };
+  }
+
+  private async waitForAccessiblePage(page: Page, deadline: number, report: ProgressReporter): Promise<boolean> {
+    let reportedBlock = false;
+    while (Date.now() < deadline) {
+      assertWindowOpen(page);
+      if (!isBlockPageTitle(await page.title().catch(() => ""))) return true;
+      if (!reportedBlock) report(`Avito shows an access check. ${SOLVE_IN_WINDOW_HINT}`);
+      reportedBlock = true;
+      await page.waitForTimeout(SETUP_TITLE_POLL_INTERVAL_MS).catch(() => undefined);
+    }
+    return false;
   }
 
   private async saveSession(page: Page, context: BrowserContext): Promise<SetupResult> {
@@ -367,4 +367,35 @@ function unusableResponseError({ response, verdict }: ClassifiedResponse): Avito
       ? `Avito request failed: ${response.requestError}`
       : `Avito returned unexpected HTTP ${response.status}.`,
   );
+}
+
+function setupTimeoutError(lastProbe: ClassifiedResponse | undefined, timeoutMs: number): AvitoMcpError {
+  const seconds = Math.ceil(timeoutMs / MS_PER_SECOND);
+  const status = lastProbe ? ` (last HTTP status: ${lastProbe.response.status})` : "";
+  if (lastProbe?.verdict === "rate_limited") {
+    return new AvitoMcpError(
+      "AVITO_RATE_LIMITED",
+      `Avito kept restricting this IP for ${seconds} seconds${status}. Wait before running ${SETUP_COMMAND} again.`,
+    );
+  }
+  return new AvitoMcpError("AVITO_BLOCKED", `Avito did not provide a usable session within ${seconds} seconds${status}.`);
+}
+
+async function waitForPageLoad(page: Page, deadline: number): Promise<boolean> {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) return false;
+  try {
+    await page.waitForEvent("load", { timeout: remaining });
+    return true;
+  } catch (error) {
+    assertWindowOpen(page);
+    if (error instanceof errors.TimeoutError) return false;
+    throw error;
+  }
+}
+
+function assertWindowOpen(page: Page): void {
+  if (page.isClosed()) {
+    throw new AvitoMcpError("REQUEST_FAILED", "The setup browser window was closed before Avito became ready.");
+  }
 }
