@@ -3,6 +3,7 @@ import type { Browser, BrowserContext, LaunchOptions, Page } from "playwright";
 
 import { AVITO_HOME_URL, isAllowedRequestUrl, SESSION_PROBE_URL } from "./avito-api.js";
 import { BLOCK_PAGE_TITLE_PREFIX, classifyResponse, isBlockPageTitle } from "./block-detection.js";
+import type { ResponseVerdict } from "./block-detection.js";
 import type { RuntimeConfig } from "./config.js";
 import { AvitoMcpError, safeError } from "./errors.js";
 import { SerialQueue } from "./serial-queue.js";
@@ -28,6 +29,11 @@ interface RawResponse {
   text: string;
   url: string;
   requestError?: string;
+}
+
+interface ClassifiedResponse {
+  response: RawResponse;
+  verdict: ResponseVerdict;
 }
 
 export interface FetchedPage {
@@ -89,8 +95,8 @@ export class AvitoBrowserSession {
   }
 
   async requestJson(url: string): Promise<unknown> {
-    const response = await this.request(url, "json");
-    if (classifyResponse(response) === "not_found") {
+    const { response, verdict } = await this.request(url, "json");
+    if (verdict === "not_found") {
       throw new AvitoMcpError("REQUEST_FAILED", "Avito returned HTTP 404 for an internal endpoint.");
     }
     try {
@@ -108,8 +114,8 @@ export class AvitoBrowserSession {
    * @returns The final page URL and HTML, or `null` when Avito answers 404.
    */
   async requestHtml(url: string): Promise<FetchedPage | null> {
-    const response = await this.request(url, "html");
-    if (classifyResponse(response) === "not_found") return null;
+    const { response, verdict } = await this.request(url, "html");
+    if (verdict === "not_found") return null;
     if (!isAllowedRequestUrl(response.url)) {
       throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Avito redirected outside www.avito.ru.");
     }
@@ -194,46 +200,26 @@ export class AvitoBrowserSession {
     return { createdAt, browserChannel: this.config.browserChannel, stored: true, cookieCount: storageState.cookies.length };
   }
 
-  private async request(url: string, contentType: ContentType): Promise<RawResponse> {
+  private async request(url: string, contentType: ContentType): Promise<ClassifiedResponse> {
     if (!isAllowedRequestUrl(url)) {
       throw new AvitoMcpError("REQUEST_FAILED", "Refusing to request a host other than www.avito.ru.");
     }
 
     return this.queue.run(async () => {
       const page = await this.ensureHeadlessPage();
-      let response = await this.throttledRequest(page, url, contentType);
-      if (classifyResponse(response) === "challenge") {
+      let result = await this.classifiedRequest(page, url, contentType);
+      if (result.verdict === "challenge") {
         await this.passChallenge(page);
-        response = await this.throttledRequest(page, url, contentType);
+        result = await this.classifiedRequest(page, url, contentType);
       }
       this.armIdleTimer();
-      await this.assertUsable(response);
-      return response;
+      const failure = unusableResponseError(result);
+      if (failure) {
+        if (failure.code === "SESSION_EXPIRED") await this.close();
+        throw failure;
+      }
+      return result;
     });
-  }
-
-  private async assertUsable(response: RawResponse): Promise<void> {
-    const verdict = classifyResponse(response);
-    if (verdict === "ok" || verdict === "not_found") return;
-    if (verdict === "rate_limited") {
-      throw new AvitoMcpError(
-        "AVITO_RATE_LIMITED",
-        `Avito temporarily restricted access from this IP (HTTP ${response.status}). Wait at least 20 minutes before retrying, or run ${SETUP_COMMAND} and pass the check in the browser window.`,
-      );
-    }
-    if (verdict === "challenge" || verdict === "session_rejected") {
-      await this.close();
-      throw new AvitoMcpError(
-        "SESSION_EXPIRED",
-        `Avito rejected the saved browser session (HTTP ${response.status}). Run ${SETUP_COMMAND} again.`,
-      );
-    }
-    throw new AvitoMcpError(
-      "REQUEST_FAILED",
-      response.requestError
-        ? `Avito request failed: ${response.requestError}`
-        : `Avito returned unexpected HTTP ${response.status}.`,
-    );
   }
 
   private async passChallenge(page: Page): Promise<void> {
@@ -247,10 +233,11 @@ export class AvitoBrowserSession {
       .catch(() => undefined);
   }
 
-  private async throttledRequest(page: Page, url: string, contentType: ContentType): Promise<RawResponse> {
+  private async classifiedRequest(page: Page, url: string, contentType: ContentType): Promise<ClassifiedResponse> {
     await this.waitForRequestSlot();
     try {
-      return await this.rawRequest(page, url, contentType);
+      const response = await this.rawRequest(page, url, contentType);
+      return { response, verdict: classifyResponse(response) };
     } finally {
       this.lastRequestAt = Date.now();
     }
@@ -354,4 +341,26 @@ export class AvitoBrowserSession {
     }, this.config.idleTimeoutMs);
     this.idleTimer.unref();
   }
+}
+
+function unusableResponseError({ response, verdict }: ClassifiedResponse): AvitoMcpError | null {
+  if (verdict === "ok" || verdict === "not_found") return null;
+  if (verdict === "rate_limited") {
+    return new AvitoMcpError(
+      "AVITO_RATE_LIMITED",
+      `Avito temporarily restricted access from this IP (HTTP ${response.status}). Wait at least 20 minutes before retrying, or run ${SETUP_COMMAND} and pass the check in the browser window.`,
+    );
+  }
+  if (verdict === "challenge" || verdict === "session_rejected") {
+    return new AvitoMcpError(
+      "SESSION_EXPIRED",
+      `Avito rejected the saved browser session (HTTP ${response.status}). Run ${SETUP_COMMAND} again.`,
+    );
+  }
+  return new AvitoMcpError(
+    "REQUEST_FAILED",
+    response.requestError
+      ? `Avito request failed: ${response.requestError}`
+      : `Avito returned unexpected HTTP ${response.status}.`,
+  );
 }
