@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseItemId, validSearchQuery } from "../src/avito-client.js";
+import { MAX_QUERY_LENGTH, parseItemId, validSearchQuery } from "../src/avito-client.js";
 
 describe("parseItemId", () => {
   it("accepts listing ids and Avito listing URLs", () => {
@@ -31,8 +31,11 @@ describe("validSearchQuery", () => {
     expect(validSearchQuery({ query: "  iphone 15 " })).toBe("iphone 15");
   });
 
-  it("rejects an inverted price range and an oversized query", () => {
-    expect(() => validSearchQuery({ query: "phone", priceMin: 10, priceMax: 5 })).toThrow(/priceMin/);
-    expect(() => validSearchQuery({ query: "x".repeat(201) })).toThrow(/too long/);
+  it.each([
+    { query: "phone", priceMin: 10, priceMax: 5 },
+    { query: "x".repeat(MAX_QUERY_LENGTH + 1) },
+    { query: "   " },
+  ])("rejects invalid input %#", (input) => {
+    expect(() => validSearchQuery(input)).toThrow(expect.objectContaining({ code: "INVALID_INPUT" }));
   });
 });

@@ -55,10 +55,10 @@ export function parseItemId(input: string): number {
 
 export function validSearchQuery(input: SearchInput): string {
   const query = input.query.trim();
-  if (!query) throw new AvitoMcpError("REQUEST_FAILED", "Search query cannot be empty.");
-  if (query.length > MAX_QUERY_LENGTH) throw new AvitoMcpError("REQUEST_FAILED", "Search query is too long.");
+  if (!query) throw new AvitoMcpError("INVALID_INPUT", "Search query cannot be empty.");
+  if (query.length > MAX_QUERY_LENGTH) throw new AvitoMcpError("INVALID_INPUT", "Search query is too long.");
   if (input.priceMin !== undefined && input.priceMax !== undefined && input.priceMin > input.priceMax) {
-    throw new AvitoMcpError("REQUEST_FAILED", "priceMin cannot be greater than priceMax.");
+    throw new AvitoMcpError("INVALID_INPUT", "priceMin cannot be greater than priceMax.");
   }
   return query;
 }
