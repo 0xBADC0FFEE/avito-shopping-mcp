@@ -223,7 +223,11 @@ export class AvitoBrowserSession {
   }
 
   private async passChallenge(page: Page): Promise<void> {
-    await this.openHome(page);
+    try {
+      await this.openHome(page);
+    } finally {
+      this.lastRequestAt = Date.now();
+    }
     await page
       .waitForFunction(
         (prefix) => !document.title.trim().startsWith(prefix),
