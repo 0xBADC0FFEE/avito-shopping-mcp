@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 
 import type { BrowserContext } from "playwright";
 
-import { WbMcpError } from "./errors.js";
+import { AvitoMcpError } from "./errors.js";
 
 export type BrowserStorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
 
@@ -47,18 +47,18 @@ export class SessionStore {
       if (process.platform !== "win32") {
         const mode = (await stat(this.path)).mode & 0o777;
         if ((mode & 0o077) !== 0) {
-          throw new WbMcpError(
+          throw new AvitoMcpError(
             "SESSION_REQUIRED",
-            "The saved Wildberries session has unsafe filesystem permissions. Run setup again.",
+            "The saved Avito session has unsafe filesystem permissions. Run setup again.",
           );
         }
       }
       raw = await readFile(this.path, "utf8");
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        throw new WbMcpError(
+        throw new AvitoMcpError(
           "SESSION_REQUIRED",
-          "No Wildberries browser session found. Run `wb-shopping-mcp setup` first.",
+          "No Avito browser session found. Run `avito-shopping-mcp setup` first.",
         );
       }
       throw error;
@@ -68,13 +68,13 @@ export class SessionStore {
     try {
       parsed = JSON.parse(raw);
     } catch (error) {
-      throw new WbMcpError("SESSION_REQUIRED", "The saved Wildberries session is not valid JSON. Run setup again.", {
+      throw new AvitoMcpError("SESSION_REQUIRED", "The saved Avito session is not valid JSON. Run setup again.", {
         cause: error,
       });
     }
 
     if (!isPersistedSession(parsed)) {
-      throw new WbMcpError("SESSION_REQUIRED", "The saved Wildberries session has an unsupported format. Run setup again.");
+      throw new AvitoMcpError("SESSION_REQUIRED", "The saved Avito session has an unsupported format. Run setup again.");
     }
     return parsed;
   }
@@ -107,7 +107,7 @@ export class SessionStore {
         path: this.path,
       };
     } catch (error) {
-      if (error instanceof WbMcpError && error.code === "SESSION_REQUIRED") {
+      if (error instanceof AvitoMcpError && error.code === "SESSION_REQUIRED") {
         return { exists: false, path: this.path };
       }
       throw error;

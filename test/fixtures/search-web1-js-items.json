@@ -1,0 +1,541 @@
+{
+  "_request": "GET https://www.avito.ru/web/1/js/items?locationId=637640&query=%D0%BA%D0%BE%D1%84%D0%B5%D0%BC%D0%B0%D1%88%D0%B8%D0%BD%D0%B0%20delonghi&s=104&p=1&pmin=5000&pmax=60000",
+  "_captured": "2026-10-06, page-context fetch() from https://www.avito.ru tab (Claude built-in browser), no login",
+  "_note": "sanitized: top-level objects other than catalog dropped; 2 of 50 items; image size variants reduced to one; seller names redacted",
+  "topLevelKeys": [
+    "url",
+    "searchHash",
+    "subscription",
+    "count",
+    "totalCount",
+    "totalElements",
+    "mainCount",
+    "itemsOnPage",
+    "itemsOnPageMainSection",
+    "catalog",
+    "filtersV2",
+    "filtersGroup",
+    "seo",
+    "seoTags",
+    "rubricators",
+    "advert",
+    "seoNavigation",
+    "faq",
+    "features",
+    "meta",
+    "searchCore",
+    "singlePage",
+    "changeLocations",
+    "geoMap",
+    "pageTypes",
+    "sideBlock",
+    "mcId",
+    "hideSaveSearch",
+    "release",
+    "isEnabledNeoNPS",
+    "rmpData",
+    "localPriorityFilter",
+    "uxFeedbackConfig",
+    "verticalLogo",
+    "historyData",
+    "analytics",
+    "context"
+  ],
+  "url": "/moskva/bytovaya_tehnika/dlya_kuhni/melkaya_kuhonnaya_tehnika/dlya_prigotovleniya_napitkov/kofemashiny/avtomaticheskaya-ASgBAgICBURglk_MB6JP7LQX_vOZA9y5F4KCmgOWyBewh78V?f=ASgBAgECBURglk_MB6JP7LQX_vOZA9y5F4KCmgOWyBewh78VAUXGmgwYeyJmcm9tIjo1MDAwLCJ0byI6NjAwMDB9&localPriority=0&q=%D0%BA%D0%BE%D1%84%D0%B5%D0%BC%D0%B0%D1%88%D0%B8%D0%BD%D0%B0+delonghi&s=104",
+  "searchHash": "ybQptndHMDoyENyb",
+  "count": 600,
+  "totalCount": 600,
+  "totalElements": 600,
+  "mainCount": 600,
+  "itemsOnPage": 50,
+  "itemsOnPageMainSection": 50,
+  "filtersGroup": "desktop_catalog_filters",
+  "mcId": 2303637,
+  "hideSaveSearch": false,
+  "release": "0a151d663b1eb5c198f09e95bfbae4d3388ab259",
+  "isEnabledNeoNPS": false,
+  "context": "H4sIAAAAAAAA_wEmANn_YToxOntzOjE6InkiO3M6MTY6InliUXB0bmRITURveUVOeWIiO33GMHzzJgAAAA",
+  "catalog": {
+    "sortDefault": 101,
+    "sorts": [
+      {
+        "value": "101",
+        "title": "По умолчанию"
+      },
+      {
+        "value": "1",
+        "title": "Дешевле"
+      },
+      {
+        "value": "2",
+        "title": "Дороже"
+      },
+      {
+        "value": "104",
+        "title": "По дате"
+      },
+      {
+        "value": "172297_desc",
+        "title": "По размеру скидки"
+      }
+    ],
+    "items": [
+      {
+        "id": 8457820574,
+        "categoryId": 21,
+        "microCategoryId": 2303637,
+        "locationId": 637640,
+        "isVerifiedItem": false,
+        "urlPath": "/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574?context=H4sIAAAAAAAA_wE_AMD_YToyOntzOjEzOiJsb2NhbFByaW9yaXR5IjtiOjA7czoxOiJ4IjtzOjE2OiJ5YlFwdG5kSE1Eb3lFTnliIjt9bmwtzD8AAAA",
+        "title": "Кофемашина delonghi magnifica rapid cappuccino",
+        "description": "Кофе машина Делонги, регулярное, обслуживание, отлично работает, есть небольшой нюанс, не влияет на работу, фото и дополнительную информацию в личном сообщении отправлю.",
+        "category": {
+          "id": 21,
+          "name": "Бытовая техника",
+          "slug": "bytovaya_tehnika",
+          "rootId": 2,
+          "compare": false,
+          "pageRootId": 2
+        },
+        "location": null,
+        "addressDetailed": {
+          "locationName": ""
+        },
+        "sortTimeStamp": 1791310294000,
+        "allowTimeStamp": 1791310294000,
+        "jobSeekerUpdateTimeStamp": null,
+        "turnOffDate": false,
+        "priceDetailed": {
+          "enabled": true,
+          "fullString": "14 000 ₽",
+          "hasValue": true,
+          "postfix": "",
+          "string": "14 000",
+          "stringWithoutDiscount": null,
+          "title": {
+            "full": "Цена",
+            "short": "Цена"
+          },
+          "titleDative": "цене",
+          "value": 14000,
+          "wasLowered": false,
+          "exponent": "14 тыс."
+        },
+        "normalizedPrice": null,
+        "priceWithoutDiscount": null,
+        "discountPercent": null,
+        "lastMinuteOffer": null,
+        "images": [
+          {
+            "636x636": "https://b00.img.avito.st/image/1/1.wWqMF7aAbYPCvZeIgkjuGIi3b4c-oGmDPscMhz5MZnkztGmZwr2XiDo.o2GWvtafGozg4y72_Ps3nWvpcjXvL7D7QQcdTuF9Vlo?cqp=2.2LhnDdKx1gU5sZ7QAbwhSdJoeYt5K_KL9JwGcCXpGrDVbBxJ1yJf9Jn7hY3rGWaiHtSha9zz1w=="
+          }
+        ],
+        "imagesCount": 1,
+        "isFavorite": false,
+        "isNew": false,
+        "geo": {
+          "geoReferences": [],
+          "formattedAddress": ""
+        },
+        "phoneImage": null,
+        "cvViewed": false,
+        "isSimilarToSearch": false,
+        "isXl": false,
+        "hasFooter": false,
+        "contacts": {
+          "phone": true,
+          "delivery": false,
+          "message": true,
+          "messageTitle": "Написать",
+          "action": "",
+          "onModeration": false,
+          "hasCVPackage": false,
+          "hasEmployeeBalanceForCv": false,
+          "serviceBooking": false,
+          "primaryButton": ""
+        },
+        "gallery": {
+          "isLazy": false,
+          "image_urls": [],
+          "imageVipUrl": "",
+          "hasLeadgenOverlay": false,
+          "noPhoto": false,
+          "has_big_image": true,
+          "wideSnippetUrls": [],
+          "isFirstImageHighImportance": true,
+          "imageAlt": "Кофемашина delonghi magnifica rapid cappuccino, Москва",
+          "images": [],
+          "extraPhoto": null,
+          "cropImagesInfo": null,
+          "image_large_urls": [],
+          "imageUrl": "",
+          "imageLargeUrl": "",
+          "imageLargeVipUrl": "",
+          "alt": "с фотографией",
+          "showSlider": false,
+          "imagesCount": 1
+        },
+        "loginLink": "#login?authsrc=ps&next=/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574?context=…",
+        "authLink": "#login?authsrc=ps",
+        "userLogo": {
+          "link": null,
+          "src": null,
+          "imageAlt": "<redacted>",
+          "developerId": null,
+          "slug": null
+        },
+        "isMarketplace": false,
+        "iva": {
+          "PriceListStep": [],
+          "DevelopmentNameStep": [],
+          "AutoParamsStep": [],
+          "BadgesStep": [],
+          "FavoritesStep": [
+            {
+              "componentData": {
+                "component": "favorites"
+              },
+              "payload": {
+                "debug": {
+                  "id": 8457820574
+                },
+                "favorite": {
+                  "searchHash": "ybQptndHMDoyENyb",
+                  "fromPage": "catalog",
+                  "fromBlock": null,
+                  "id": 8457820574,
+                  "isFavorite": false,
+                  "categorySlug": "bytovaya_tehnika",
+                  "rootCategoryId": 2,
+                  "access": {
+                    "favorite": true,
+                    "compare": false
+                  }
+                }
+              },
+              "default": true
+            }
+          ],
+          "FirstLineStep": [],
+          "TitleStep": [
+            {
+              "componentData": {
+                "component": "title"
+              },
+              "payload": {
+                "seo": {
+                  "title": "Кофемашина delonghi magnifica rapid cappuccino в Москве"
+                },
+                "debug": {
+                  "id": 8457820574
+                },
+                "title": "Кофемашина delonghi magnifica rapid cappuccino",
+                "urlPath": "/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574?context=…"
+              },
+              "default": true
+            }
+          ],
+          "AutoTireManufacturerStep": [],
+          "GeoStep": [
+            {
+              "componentData": {
+                "component": "geo"
+              },
+              "payload": {
+                "geoForItems": {},
+                "debug": {
+                  "id": 8457820574
+                }
+              },
+              "default": true
+            },
+            {
+              "componentData": {
+                "component": "delivery"
+              },
+              "payload": {
+                "id": 8457820574,
+                "text": "Доставка от 1 дня",
+                "icon": {
+                  "display": false
+                }
+              },
+              "default": true
+            }
+          ],
+          "FourthLineStep": [],
+          "AutotekaStep": [],
+          "PriceStep": [
+            {
+              "componentData": {
+                "component": "price"
+              },
+              "payload": {
+                "priceDetailed": {
+                  "wasLowered": false,
+                  "postfix": "",
+                  "string": "14 000",
+                  "stringWithoutDiscount": null,
+                  "value": 14000
+                },
+                "normalizedPrice": null,
+                "debug": {
+                  "id": 8457820574
+                },
+                "isHighlighted": false
+              },
+              "default": true
+            },
+            {
+              "componentData": {
+                "component": "delivery"
+              },
+              "payload": {
+                "id": 8457820574,
+                "withHover": true,
+                "debug": {
+                  "id": 8457820574
+                }
+              },
+              "default": true
+            }
+          ],
+          "AutoTireInfoStep": [],
+          "SecondLineStep": [],
+          "ThirdLineStep": [],
+          "BadgeBarStep": [
+            {
+              "componentData": {
+                "component": "badgebar"
+              },
+              "payload": {
+                "debug": {
+                  "id": 8457820574
+                },
+                "badges": [
+                  {
+                    "id": 2558,
+                    "title": "Оплата частями",
+                    "version": 2,
+                    "style": "{…}"
+                  }
+                ]
+              },
+              "default": true
+            }
+          ],
+          "BadgeStickerStep": [],
+          "DateInfoStep": [
+            {
+              "componentData": {
+                "component": "date-info"
+              },
+              "payload": {
+                "debug": {
+                  "id": 8457820574
+                },
+                "absolute": "",
+                "relative": "1 час назад"
+              },
+              "default": true
+            },
+            {
+              "componentData": {
+                "component": "vas"
+              },
+              "payload": {
+                "vas": [],
+                "isTooltipHidden": false,
+                "debug": {
+                  "id": 8457820574
+                }
+              },
+              "default": true
+            }
+          ],
+          "DescriptionStep": [
+            {
+              "componentData": {
+                "component": "description"
+              },
+              "payload": {
+                "description": "Кофе машина Делонги, регулярное, обслуживание, отлично работает, есть небольшой нюанс, не влияет на работу, фото и дополнительную информацию в личном сообщении отправлю.",
+                "urlPath": "/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574?context=…",
+                "debug": {
+                  "id": 8457820574
+                }
+              },
+              "default": true
+            }
+          ],
+          "OEMStep": [],
+          "GroupingsStep": [],
+          "AutoPartsManufacturerStep": [],
+          "UserInfoStep": [
+            {
+              "componentData": {
+                "component": "seller-info"
+              },
+              "payload": {
+                "rating": {
+                  "score": 5,
+                  "summary": "155 отзывов",
+                  "showChevronEnd": false
+                },
+                "profile": {
+                  "title": "<public seller first name>",
+                  "link": "/brands/03ce308a3e5989378d53c4f1b2f80718?src=search_seller_info&iid=8457820574"
+                },
+                "showLink": true
+              },
+              "default": true
+            },
+            {
+              "componentData": {
+                "component": "seller-badgebar"
+              },
+              "payload": {
+                "debug": {
+                  "id": 8457820574
+                },
+                "badges": [
+                  {
+                    "id": 2359,
+                    "title": "Надёжный продавец",
+                    "version": 1,
+                    "style": "{…}"
+                  },
+                  {
+                    "id": 31,
+                    "title": "Документы проверены",
+                    "version": 1,
+                    "style": "{…}"
+                  }
+                ]
+              },
+              "default": true
+            }
+          ]
+        },
+        "hasVideo": false,
+        "hasRealtyLayout": false,
+        "groupData": null,
+        "isReMapPromotion": false,
+        "nativeVideo": null,
+        "isReserved": false,
+        "type": "item",
+        "ratingExperimentGroup": "names_and_badges_and_rating",
+        "isRatingExperiment": true,
+        "rating": {
+          "score": 5,
+          "summary": "155 отзывов",
+          "showChevronEnd": false
+        },
+        "closedItemsText": "284 завершённых объявления",
+        "showRecallRequestButton": false,
+        "closestAddressId": 89742,
+        "isSparePartsCompatibility": false,
+        "isPossibleSparePartsCompatibility": false,
+        "openInNewTab": true,
+        "isNewCarsExtraLeadsView": false
+      },
+      {
+        "id": 8544880758,
+        "categoryId": 21,
+        "microCategoryId": 2303637,
+        "locationId": 637640,
+        "isVerifiedItem": false,
+        "urlPath": "/moskva/bytovaya_tehnika/kofemashina_delonghi_caffe_corso_8544880758?context=…",
+        "title": "Кофемашина Delonghi Caffe Corso",
+        "description": "Кофемашина Delonghi Caffe Corso в хорошем состоянии, полностью исправна. Помыта, почищена, проведено полное обслуживание, смазка, очистка от накипи. Видео работы по запросу.\nПроверка, самовывоз, авито доставка.",
+        "category": {
+          "id": 21,
+          "name": "Бытовая техника",
+          "slug": "bytovaya_tehnika",
+          "rootId": 2,
+          "compare": false,
+          "pageRootId": 2
+        },
+        "location": null,
+        "addressDetailed": {
+          "locationName": ""
+        },
+        "sortTimeStamp": 1791308563000,
+        "allowTimeStamp": 1791308563000,
+        "turnOffDate": false,
+        "priceDetailed": {
+          "enabled": true,
+          "fullString": "9 500 ₽",
+          "hasValue": true,
+          "postfix": "",
+          "string": "9 500",
+          "stringWithoutDiscount": null,
+          "value": 9500,
+          "wasLowered": false,
+          "exponent": "10 тыс."
+        },
+        "images": [
+          {
+            "636x636": "https://30.img.avito.st/image/1/1.HzQESbaAs91K40nWNnkGRgDpsdm2_rfdtpnS2bYSuCe76rfHSuNJ1rI.iz8Lyw-nFBHIO9KYPlw9EIr9gCi6M464dILUQQMFPrw"
+          },
+          "…truncated 4 more"
+        ],
+        "imagesCount": 5,
+        "gallery": {
+          "alt": "5 фотографий",
+          "showSlider": true,
+          "imagesCount": 5,
+          "imageAlt": "Кофемашина Delonghi Caffe Corso, Москва"
+        },
+        "iva": {
+          "UserInfoStep": [],
+          "DateInfoStep": [
+            {
+              "componentData": {
+                "component": "date-info"
+              },
+              "payload": {
+                "debug": {
+                  "id": 8544880758
+                },
+                "absolute": "",
+                "relative": "1 час назад"
+              },
+              "default": true
+            }
+          ],
+          "BadgeBarStep": [
+            {
+              "componentData": {
+                "component": "badgebar"
+              },
+              "payload": {
+                "badges": [
+                  {
+                    "id": 2558,
+                    "title": "Оплата частями"
+                  },
+                  {
+                    "id": 2293,
+                    "title": "3 дня на возврат"
+                  }
+                ]
+              },
+              "default": true
+            }
+          ],
+          "_note": "other IVA steps same shape as item 1; UserInfoStep is EMPTY for this item (no seller block in SERP)"
+        },
+        "isReserved": false,
+        "type": "item",
+        "rating": {
+          "score": 4.9,
+          "summary": "288 отзывов",
+          "showChevronEnd": false
+        },
+        "closedItemsText": "538 завершённых объявлений",
+        "closestAddressId": 297154
+      }
+    ]
+  }
+}

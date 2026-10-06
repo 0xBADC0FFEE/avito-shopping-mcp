@@ -1,10 +1,10 @@
 {
-  "name": "wb-shopping-mcp",
+  "name": "avito-shopping-mcp",
   "version": "0.1.0",
-  "description": "Unofficial Wildberries MCP server for buyer-side product search, prices, product cards, and reviews.",
+  "description": "Unofficial Avito MCP server for buyer-side listing search, listing details, and seller reviews.",
   "type": "module",
   "bin": {
-    "wb-shopping-mcp": "dist/cli.js"
+    "avito-shopping-mcp": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -30,11 +30,10 @@
     "mcp",
     "mcp-server",
     "model-context-protocol",
-    "wildberries",
-    "wb",
+    "avito",
     "shopping",
-    "product-search",
-    "ecommerce",
+    "classifieds",
+    "listing-search",
     "marketplace",
     "buyer",
     "playwright"
@@ -42,12 +41,12 @@
   "author": "Maxim Zaytcev <neosheps@gmail.com> (https://github.com/neosheps)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/0xBADC0FFEE/wb-shopping-mcp.git"
+    "url": "git+https://github.com/0xBADC0FFEE/avito-shopping-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/0xBADC0FFEE/wb-shopping-mcp/issues"
+    "url": "https://github.com/0xBADC0FFEE/avito-shopping-mcp/issues"
   },
-  "homepage": "https://github.com/0xBADC0FFEE/wb-shopping-mcp#readme",
+  "homepage": "https://github.com/0xBADC0FFEE/avito-shopping-mcp#readme",
   "license": "MIT",
   "publishConfig": {
     "access": "public"

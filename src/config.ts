@@ -14,6 +14,12 @@ export interface RuntimeConfig {
   navigationTimeoutMs: number;
 }
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+// Avito throttles an IP after a few dozen requests in quick succession.
+const DEFAULT_MIN_REQUEST_INTERVAL_MS = 5_000;
+const DEFAULT_IDLE_TIMEOUT_MS = 5 * 60_000;
+const DEFAULT_NAVIGATION_TIMEOUT_MS = 90_000;
+
 function positiveInteger(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw === undefined) return fallback;
@@ -27,32 +33,32 @@ function positiveInteger(name: string, fallback: number): number {
 
 function defaultStateDir(): string {
   if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Application Support", "wb-shopping-mcp");
+    return join(homedir(), "Library", "Application Support", "avito-shopping-mcp");
   }
   if (process.platform === "win32") {
-    return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "wb-shopping-mcp");
+    return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "avito-shopping-mcp");
   }
-  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "wb-shopping-mcp");
+  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "avito-shopping-mcp");
 }
 
 function browserChannel(): BrowserChannel {
-  const value = process.env.WB_MCP_BROWSER_CHANNEL ?? "chrome";
+  const value = process.env.AVITO_MCP_BROWSER_CHANNEL ?? "chrome";
   if (value === "chrome" || value === "chromium" || value === "msedge") return value;
-  throw new Error("WB_MCP_BROWSER_CHANNEL must be chrome, chromium, or msedge");
+  throw new Error("AVITO_MCP_BROWSER_CHANNEL must be chrome, chromium, or msedge");
 }
 
 export function loadConfig(): RuntimeConfig {
-  const stateDir = resolve(process.env.WB_MCP_STATE_DIR ?? defaultStateDir());
-  const executablePath = process.env.WB_MCP_EXECUTABLE_PATH?.trim();
+  const stateDir = resolve(process.env.AVITO_MCP_STATE_DIR ?? defaultStateDir());
+  const executablePath = process.env.AVITO_MCP_EXECUTABLE_PATH?.trim();
 
   return {
     browserChannel: browserChannel(),
     ...(executablePath ? { executablePath: resolve(executablePath) } : {}),
     stateDir,
     stateFile: join(stateDir, "session.json"),
-    requestTimeoutMs: positiveInteger("WB_MCP_REQUEST_TIMEOUT_MS", 30_000),
-    minimumRequestIntervalMs: positiveInteger("WB_MCP_MIN_REQUEST_INTERVAL_MS", 750),
-    idleTimeoutMs: positiveInteger("WB_MCP_IDLE_TIMEOUT_MS", 5 * 60_000),
-    navigationTimeoutMs: positiveInteger("WB_MCP_NAVIGATION_TIMEOUT_MS", 90_000),
+    requestTimeoutMs: positiveInteger("AVITO_MCP_REQUEST_TIMEOUT_MS", DEFAULT_REQUEST_TIMEOUT_MS),
+    minimumRequestIntervalMs: positiveInteger("AVITO_MCP_MIN_REQUEST_INTERVAL_MS", DEFAULT_MIN_REQUEST_INTERVAL_MS),
+    idleTimeoutMs: positiveInteger("AVITO_MCP_IDLE_TIMEOUT_MS", DEFAULT_IDLE_TIMEOUT_MS),
+    navigationTimeoutMs: positiveInteger("AVITO_MCP_NAVIGATION_TIMEOUT_MS", DEFAULT_NAVIGATION_TIMEOUT_MS),
   };
 }
