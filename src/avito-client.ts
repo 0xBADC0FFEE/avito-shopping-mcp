@@ -16,10 +16,16 @@ export interface SearchInput {
   limit?: number | undefined;
 }
 
-const MAX_QUERY_LENGTH = 200;
-const MAX_ITEM_INPUT_LENGTH = 2_048;
-const DEFAULT_SEARCH_LIMIT = 20;
-const DEFAULT_REVIEWS_LIMIT = 10;
+export const MAX_QUERY_LENGTH = 200;
+export const MAX_ITEM_INPUT_LENGTH = 2_048;
+export const DEFAULT_SEARCH_LIMIT = 20;
+export const MAX_SEARCH_LIMIT = 50;
+export const DEFAULT_REVIEWS_LIMIT = 10;
+export const MAX_REVIEWS_LIMIT = 50;
+export const MIN_SETUP_TIMEOUT_SECONDS = 30;
+export const DEFAULT_SETUP_TIMEOUT_SECONDS = 120;
+export const MAX_SETUP_TIMEOUT_SECONDS = 300;
+const MS_PER_SECOND = 1_000;
 const ITEM_HOSTS = new Set(["avito.ru", "www.avito.ru", "m.avito.ru"]);
 const ITEM_PATH = /^\/(?:(\d+)|[^/]+\/[^/]+\/[^/]+_(\d+))\/?$/;
 const CYRILLIC = /\p{Script=Cyrillic}/u;
@@ -65,8 +71,8 @@ export class AvitoClient {
     this.session = new AvitoBrowserSession(config);
   }
 
-  setup(timeoutMs?: number, report?: (message: string) => void) {
-    return this.session.setup(timeoutMs, report);
+  setup(timeoutSeconds = DEFAULT_SETUP_TIMEOUT_SECONDS, report?: (message: string) => void) {
+    return this.session.setup(timeoutSeconds * MS_PER_SECOND, report);
   }
 
   async search(input: SearchInput): Promise<SearchResult> {

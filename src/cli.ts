@@ -3,16 +3,23 @@
 import { loadConfig } from "./config.js";
 import { safeError } from "./errors.js";
 import { serve } from "./mcp-server.js";
-import { AvitoClient } from "./avito-client.js";
+import {
+  AvitoClient,
+  DEFAULT_SETUP_TIMEOUT_SECONDS,
+  MAX_SETUP_TIMEOUT_SECONDS,
+  MIN_SETUP_TIMEOUT_SECONDS,
+} from "./avito-client.js";
 import { VERSION } from "./version.js";
 
 function timeoutArgument(args: string[]): number {
   const index = args.indexOf("--timeout");
   const raw = index >= 0 ? args[index + 1] : args.find((arg) => arg.startsWith("--timeout="))?.split("=", 2)[1];
-  if (raw === undefined) return 120;
+  if (raw === undefined) return DEFAULT_SETUP_TIMEOUT_SECONDS;
   const seconds = Number(raw);
-  if (!Number.isInteger(seconds) || seconds < 30 || seconds > 300) {
-    throw new Error("--timeout must be an integer between 30 and 300 seconds");
+  if (!Number.isInteger(seconds) || seconds < MIN_SETUP_TIMEOUT_SECONDS || seconds > MAX_SETUP_TIMEOUT_SECONDS) {
+    throw new Error(
+      `--timeout must be an integer between ${MIN_SETUP_TIMEOUT_SECONDS} and ${MAX_SETUP_TIMEOUT_SECONDS} seconds`,
+    );
   }
   return seconds;
 }
@@ -21,7 +28,7 @@ function printHelp(): void {
   console.log(`avito-shopping-mcp ${VERSION}
 
 Usage:
-  avito-shopping-mcp setup [--timeout 120]  Create or refresh the local Avito session
+  avito-shopping-mcp setup [--timeout ${DEFAULT_SETUP_TIMEOUT_SECONDS}]  Create or refresh the local Avito session
   avito-shopping-mcp doctor                 Verify configuration and the saved session
   avito-shopping-mcp serve                  Run the MCP server over stdio
   avito-shopping-mcp help                   Show this help
@@ -33,7 +40,7 @@ async function main(): Promise<void> {
   const client = new AvitoClient(loadConfig());
 
   if (command === "setup") {
-    const result = await client.setup(timeoutArgument(process.argv.slice(3)) * 1_000, (message) => console.error(message));
+    const result = await client.setup(timeoutArgument(process.argv.slice(3)), (message) => console.error(message));
     console.log(JSON.stringify(result, null, 2));
     return;
   }

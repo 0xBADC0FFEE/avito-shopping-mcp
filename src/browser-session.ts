@@ -11,7 +11,6 @@ import type { PersistedSession } from "./session-store.js";
 
 const VIEWPORT = { width: 1440, height: 900 };
 const LOCALE = "ru-RU";
-const DEFAULT_SETUP_TIMEOUT_MS = 120_000;
 const SETUP_POLL_INTERVAL_MS = 2_000;
 const SETUP_PROBE_INTERVAL_MS = 10_000;
 const HOME_SETTLE_MS = 1_000;
@@ -63,7 +62,7 @@ export class AvitoBrowserSession {
     this.store = new SessionStore(config.stateFile);
   }
 
-  async setup(timeoutMs = DEFAULT_SETUP_TIMEOUT_MS, report: ProgressReporter = () => undefined): Promise<SetupResult> {
+  async setup(timeoutMs: number, report: ProgressReporter = () => undefined): Promise<SetupResult> {
     await this.close();
     report("Opening a temporary Chrome window for Avito session setup…");
 

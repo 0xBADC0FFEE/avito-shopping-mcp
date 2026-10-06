@@ -2,6 +2,17 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import * as z from "zod/v4";
 
+import {
+  DEFAULT_REVIEWS_LIMIT,
+  DEFAULT_SEARCH_LIMIT,
+  DEFAULT_SETUP_TIMEOUT_SECONDS,
+  MAX_ITEM_INPUT_LENGTH,
+  MAX_QUERY_LENGTH,
+  MAX_REVIEWS_LIMIT,
+  MAX_SEARCH_LIMIT,
+  MAX_SETUP_TIMEOUT_SECONDS,
+  MIN_SETUP_TIMEOUT_SECONDS,
+} from "./avito-client.js";
 import type { AvitoClient } from "./avito-client.js";
 import { safeError } from "./errors.js";
 import { SEARCH_SORTS } from "./types.js";
@@ -12,7 +23,7 @@ const ITEM_INPUT = z
   .string()
   .trim()
   .min(1)
-  .max(2_048)
+  .max(MAX_ITEM_INPUT_LENGTH)
   .describe("Avito listing URL (https://www.avito.ru/<city>/<category>/<slug>_<id>) or numeric listing id");
 
 const INSTRUCTIONS =
@@ -57,7 +68,7 @@ export function createServer(client: AvitoClient): McpServer {
       description:
         "Search Avito classifieds in one city. Returns listing ids, titles, prices, URLs, publication time, an image, and seller name and rating when Avito shows them.",
       inputSchema: z.object({
-        query: z.string().trim().min(1).max(200).describe("Search text"),
+        query: z.string().trim().min(1).max(MAX_QUERY_LENGTH).describe("Search text"),
         location: z
           .string()
           .trim()
@@ -72,7 +83,7 @@ export function createServer(client: AvitoClient): McpServer {
         priceMin: z.number().int().nonnegative().optional().describe("Minimum price in RUB"),
         priceMax: z.number().int().nonnegative().optional().describe("Maximum price in RUB"),
         page: z.number().int().min(1).default(1).describe("Result page; Avito pages hold 50 listings"),
-        limit: z.number().int().min(1).max(50).default(20).describe("Listings to return from the page"),
+        limit: z.number().int().min(1).max(MAX_SEARCH_LIMIT).default(DEFAULT_SEARCH_LIMIT).describe("Listings to return from the page"),
       }),
       annotations: READ_ONLY,
     },
@@ -99,7 +110,7 @@ export function createServer(client: AvitoClient): McpServer {
         "Read the newest reviews of the seller behind an Avito listing, with the seller's overall rating and score distribution. Reviews cover all of the seller's deals, not only this listing.",
       inputSchema: z.object({
         item: ITEM_INPUT,
-        limit: z.number().int().min(1).max(50).default(10).describe("Reviews to return, newest first"),
+        limit: z.number().int().min(1).max(MAX_REVIEWS_LIMIT).default(DEFAULT_REVIEWS_LIMIT).describe("Reviews to return, newest first"),
       }),
       annotations: READ_ONLY,
     },
@@ -127,11 +138,16 @@ export function createServer(client: AvitoClient): McpServer {
       description:
         "Open a temporary browser window, wait until Avito serves search results (the user may need to pass an access check), save the session locally, and close the window.",
       inputSchema: z.object({
-        timeoutSeconds: z.number().int().min(30).max(300).default(120),
+        timeoutSeconds: z
+          .number()
+          .int()
+          .min(MIN_SETUP_TIMEOUT_SECONDS)
+          .max(MAX_SETUP_TIMEOUT_SECONDS)
+          .default(DEFAULT_SETUP_TIMEOUT_SECONDS),
       }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
-    ({ timeoutSeconds }) => run(() => client.setup(timeoutSeconds * 1_000)),
+    ({ timeoutSeconds }) => run(() => client.setup(timeoutSeconds)),
   );
 
   return server;
