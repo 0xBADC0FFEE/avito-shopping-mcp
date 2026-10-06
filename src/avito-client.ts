@@ -1,5 +1,7 @@
 import { apiUrl, itemPageUrl, locationsApiUrl, MOSCOW, searchApiUrl, sellerRatingsUrl } from "./avito-api.js";
 import { AvitoBrowserSession } from "./browser-session.js";
+
+export { RATE_LIMIT_BACKOFF_MINUTES } from "./browser-session.js";
 import type { RuntimeConfig } from "./config.js";
 import { AvitoMcpError } from "./errors.js";
 import { parseItem, parseSellerUserKey, readBuyerItem } from "./item-page.js";

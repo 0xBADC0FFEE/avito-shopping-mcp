@@ -19,6 +19,10 @@ const MAX_REQUEST_JITTER_MS = 2_000;
 const SETUP_COMMAND = "`avito-shopping-mcp setup`";
 const SOLVE_IN_WINDOW_HINT = "Solve any captcha in the opened browser window yourself and keep the window open.";
 const MS_PER_SECOND = 1_000;
+const MS_PER_MINUTE = 60_000;
+// Avito IP restrictions last 20 minutes or more; any request during one extends it.
+export const RATE_LIMIT_BACKOFF_MINUTES = 20;
+const RATE_LIMIT_BACKOFF_MS = RATE_LIMIT_BACKOFF_MINUTES * MS_PER_MINUTE;
 const ACCEPT_HEADERS = { json: "application/json", html: "text/html" } as const;
 
 type ContentType = keyof typeof ACCEPT_HEADERS;
@@ -63,6 +67,7 @@ export class AvitoBrowserSession {
   private context: BrowserContext | undefined;
   private page: Page | undefined;
   private lastRequestAt = 0;
+  private rateLimitedAt: number | undefined;
   private idleTimer: NodeJS.Timeout | undefined;
 
   constructor(private readonly config: RuntimeConfig) {
@@ -80,7 +85,11 @@ export class AvitoBrowserSession {
     try {
       await this.openHome(page);
       const outcome = await this.waitForUsableSession(page, Date.now() + timeoutMs, report);
-      if (!outcome.ready) throw setupTimeoutError(outcome.lastProbe, timeoutMs);
+      if (!outcome.ready) {
+        const error = setupTimeoutError(outcome.lastProbe, timeoutMs);
+        this.recordRateLimit(error);
+        throw error;
+      }
       const result = await this.saveSession(page, context);
       report("Avito session is ready and stored locally.");
       return result;
@@ -206,6 +215,7 @@ export class AvitoBrowserSession {
     }
 
     return this.queue.run(async () => {
+      await this.enforceRateLimitBackoff();
       const page = await this.ensureHeadlessPage();
       let result = await this.classifiedRequest(page, url, contentType);
       if (result.verdict === "challenge") {
@@ -216,10 +226,39 @@ export class AvitoBrowserSession {
       const failure = unusableResponseError(result);
       if (failure) {
         if (failure.code === "SESSION_EXPIRED") await this.close();
+        this.recordRateLimit(failure);
         throw failure;
       }
       return result;
     });
+  }
+
+  private recordRateLimit(error: AvitoMcpError): void {
+    if (error.code === "AVITO_RATE_LIMITED") this.rateLimitedAt = Date.now();
+  }
+
+  // A setup run in another process stores a fresh session, which lifts the backoff early.
+  private async enforceRateLimitBackoff(): Promise<void> {
+    if (this.rateLimitedAt === undefined) return;
+    const remainingMs = this.rateLimitedAt + RATE_LIMIT_BACKOFF_MS - Date.now();
+    if (remainingMs <= 0) {
+      this.rateLimitedAt = undefined;
+      return;
+    }
+    if (await this.sessionStoredAfter(this.rateLimitedAt)) {
+      this.rateLimitedAt = undefined;
+      await this.close();
+      return;
+    }
+    throw new AvitoMcpError(
+      "AVITO_RATE_LIMITED",
+      `Avito restricted this IP recently; Avito requests stay paused for ${Math.ceil(remainingMs / MS_PER_MINUTE)} more minutes, or until ${SETUP_COMMAND} succeeds.`,
+    );
+  }
+
+  private async sessionStoredAfter(time: number): Promise<boolean> {
+    const { createdAt } = await this.store.info();
+    return createdAt !== undefined && Date.parse(createdAt) > time;
   }
 
   private async passChallenge(page: Page): Promise<void> {
@@ -352,7 +391,7 @@ function unusableResponseError({ response, verdict }: ClassifiedResponse): Avito
   if (verdict === "rate_limited") {
     return new AvitoMcpError(
       "AVITO_RATE_LIMITED",
-      `Avito temporarily restricted access from this IP (HTTP ${response.status}). Wait at least 20 minutes before retrying, or run ${SETUP_COMMAND} and pass the check in the browser window.`,
+      `Avito temporarily restricted access from this IP (HTTP ${response.status}). Avito requests are paused for ${RATE_LIMIT_BACKOFF_MINUTES} minutes; run ${SETUP_COMMAND} and pass the check in the browser window to resume sooner.`,
     );
   }
   if (verdict === "challenge" || verdict === "session_rejected") {
@@ -375,7 +414,7 @@ function setupTimeoutError(lastProbe: ClassifiedResponse | undefined, timeoutMs:
   if (lastProbe?.verdict === "rate_limited") {
     return new AvitoMcpError(
       "AVITO_RATE_LIMITED",
-      `Avito kept restricting this IP for ${seconds} seconds${status}. Wait before running ${SETUP_COMMAND} again.`,
+      `Avito kept restricting this IP for ${seconds} seconds${status}. Wait at least ${RATE_LIMIT_BACKOFF_MINUTES} minutes before running ${SETUP_COMMAND} again.`,
     );
   }
   return new AvitoMcpError("AVITO_BLOCKED", `Avito did not provide a usable session within ${seconds} seconds${status}.`);
