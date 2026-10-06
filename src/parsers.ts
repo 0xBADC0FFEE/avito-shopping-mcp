@@ -1,6 +1,6 @@
 import type { ProductReview, ReviewsResult } from "./types.js";
-import { isAllowedApiUrl, isAllowedHost } from "./wb-api.js";
-import type { BasketRoute } from "./wb-api.js";
+import { isAllowedApiUrl, isAllowedHost } from "./avito-api.js";
+import type { BasketRoute } from "./avito-api.js";
 
 type JsonObject = Record<string, unknown>;
 

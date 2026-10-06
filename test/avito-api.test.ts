@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isAllowedApiUrl, productCardUrl, productImageUrls, regionQuery, searchApiUrl } from "../src/wb-api.js";
+import { isAllowedApiUrl, productCardUrl, productImageUrls, regionQuery, searchApiUrl } from "../src/avito-api.js";
 
 const routes = [
   { volFrom: 0, volTo: 143, host: "basket-01.wbbasket.ru" },

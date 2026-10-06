@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { WbMcpError } from "../src/errors.js";
-import { buildSearchFilters, parseArticle } from "../src/wb-client.js";
+import { AvitoMcpError } from "../src/errors.js";
+import { buildSearchFilters, parseArticle } from "../src/avito-client.js";
 
 describe("parseArticle", () => {
   it("supports article numbers and Wildberries product URLs", () => {
@@ -11,13 +11,13 @@ describe("parseArticle", () => {
   });
 
   it("rejects non-Wildberries and non-product inputs", () => {
-    expect(() => parseArticle("https://example.com/catalog/1222039104/detail.aspx")).toThrow(WbMcpError);
-    expect(() => parseArticle("http://www.wildberries.ru/catalog/1222039104/detail.aspx")).toThrow(WbMcpError);
-    expect(() => parseArticle("https://seller.wildberries.ru/catalog/1222039104/detail.aspx")).toThrow(WbMcpError);
-    expect(() => parseArticle("https://www.wildberries.ru/catalog/elektronika/smartfony")).toThrow(WbMcpError);
-    expect(() => parseArticle("iphone-15")).toThrow(WbMcpError);
-    expect(() => parseArticle("0")).toThrow(WbMcpError);
-    expect(() => parseArticle("99999999999999999999")).toThrow(WbMcpError);
+    expect(() => parseArticle("https://example.com/catalog/1222039104/detail.aspx")).toThrow(AvitoMcpError);
+    expect(() => parseArticle("http://www.wildberries.ru/catalog/1222039104/detail.aspx")).toThrow(AvitoMcpError);
+    expect(() => parseArticle("https://seller.wildberries.ru/catalog/1222039104/detail.aspx")).toThrow(AvitoMcpError);
+    expect(() => parseArticle("https://www.wildberries.ru/catalog/elektronika/smartfony")).toThrow(AvitoMcpError);
+    expect(() => parseArticle("iphone-15")).toThrow(AvitoMcpError);
+    expect(() => parseArticle("0")).toThrow(AvitoMcpError);
+    expect(() => parseArticle("99999999999999999999")).toThrow(AvitoMcpError);
   });
 });
 
@@ -36,10 +36,10 @@ describe("buildSearchFilters", () => {
   });
 
   it("rejects an inverted price range", () => {
-    expect(() => buildSearchFilters({ query: "phone", priceMin: 10, priceMax: 5 })).toThrow(WbMcpError);
+    expect(() => buildSearchFilters({ query: "phone", priceMin: 10, priceMax: 5 })).toThrow(AvitoMcpError);
   });
 
   it("rejects an excessively long search query", () => {
-    expect(() => buildSearchFilters({ query: "x".repeat(201) })).toThrow(WbMcpError);
+    expect(() => buildSearchFilters({ query: "x".repeat(201) })).toThrow(AvitoMcpError);
   });
 });

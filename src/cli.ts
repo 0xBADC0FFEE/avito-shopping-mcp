@@ -3,7 +3,7 @@
 import { loadConfig } from "./config.js";
 import { safeError } from "./errors.js";
 import { serve } from "./mcp-server.js";
-import { WbClient } from "./wb-client.js";
+import { AvitoClient } from "./avito-client.js";
 import { VERSION } from "./version.js";
 
 function timeoutArgument(args: string[]): number {
@@ -18,19 +18,19 @@ function timeoutArgument(args: string[]): number {
 }
 
 function printHelp(): void {
-  console.log(`wb-shopping-mcp ${VERSION}
+  console.log(`avito-shopping-mcp ${VERSION}
 
 Usage:
-  wb-shopping-mcp setup [--timeout 120]  Create or refresh the local Wildberries session
-  wb-shopping-mcp doctor                Verify configuration and the saved session
-  wb-shopping-mcp serve                 Run the MCP server over stdio
-  wb-shopping-mcp help                  Show this help
+  avito-shopping-mcp setup [--timeout 120]  Create or refresh the local Wildberries session
+  avito-shopping-mcp doctor                Verify configuration and the saved session
+  avito-shopping-mcp serve                 Run the MCP server over stdio
+  avito-shopping-mcp help                  Show this help
 `);
 }
 
 async function main(): Promise<void> {
   const command = process.argv[2] ?? "serve";
-  const client = new WbClient(loadConfig());
+  const client = new AvitoClient(loadConfig());
 
   if (command === "setup") {
     const result = await client.setup(timeoutArgument(process.argv.slice(3)) * 1_000, (message) => console.error(message));

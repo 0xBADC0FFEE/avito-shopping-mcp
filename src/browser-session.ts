@@ -2,11 +2,11 @@ import { chromium } from "playwright";
 import type { Browser, BrowserContext, LaunchOptions, Page } from "playwright";
 
 import type { RuntimeConfig } from "./config.js";
-import { WbMcpError } from "./errors.js";
+import { AvitoMcpError } from "./errors.js";
 import { SerialQueue } from "./serial-queue.js";
 import { SessionStore } from "./session-store.js";
 import type { PersistedSession } from "./session-store.js";
-import { isAllowedApiUrl, regionQuery, SESSION_PROBE_URL, WB_HOME_URL } from "./wb-api.js";
+import { isAllowedApiUrl, regionQuery, SESSION_PROBE_URL, WB_HOME_URL } from "./avito-api.js";
 
 // Same-origin API calls are rejected by the anti-bot layer without this id as the `deviceid` header.
 const DEVICE_ID_STORAGE_KEY = "wbx__sessionID";
@@ -35,7 +35,7 @@ export interface LiveSessionCheck {
 
 type ProgressReporter = (message: string) => void;
 
-export class WbBrowserSession {
+export class AvitoBrowserSession {
   private readonly store: SessionStore;
   private readonly queue = new SerialQueue();
   private browser: Browser | undefined;
@@ -69,7 +69,7 @@ export class WbBrowserSession {
       let lastStatus: number | undefined;
       while (Date.now() < deadline) {
         if (page.isClosed()) {
-          throw new WbMcpError("REQUEST_FAILED", "The setup browser window was closed before Wildberries became ready.");
+          throw new AvitoMcpError("REQUEST_FAILED", "The setup browser window was closed before Wildberries became ready.");
         }
 
         await page.waitForTimeout(1_500);
@@ -97,8 +97,8 @@ export class WbBrowserSession {
         }
       }
 
-      throw new WbMcpError(
-        "WB_BLOCKED",
+      throw new AvitoMcpError(
+        "AVITO_BLOCKED",
         `Wildberries did not provide a usable session within ${Math.ceil(timeoutMs / 1000)} seconds${lastStatus ? ` (last HTTP status: ${lastStatus})` : ""}.`,
       );
     } finally {
@@ -109,7 +109,7 @@ export class WbBrowserSession {
 
   async requestJson(url: string): Promise<unknown> {
     if (!isAllowedApiUrl(url)) {
-      throw new WbMcpError("REQUEST_FAILED", "Refusing to request a host outside Wildberries.");
+      throw new AvitoMcpError("REQUEST_FAILED", "Refusing to request a host outside Wildberries.");
     }
 
     return this.queue.run(async () => {
@@ -121,13 +121,13 @@ export class WbBrowserSession {
 
       if (SESSION_REJECTED_STATUSES.has(response.status)) {
         await this.close();
-        throw new WbMcpError(
+        throw new AvitoMcpError(
           "SESSION_EXPIRED",
-          `Wildberries rejected the saved browser session with HTTP ${response.status}. Run \`wb-shopping-mcp setup\` again.`,
+          `Wildberries rejected the saved browser session with HTTP ${response.status}. Run \`avito-shopping-mcp setup\` again.`,
         );
       }
       if (response.status !== 200) {
-        throw new WbMcpError(
+        throw new AvitoMcpError(
           "REQUEST_FAILED",
           response.requestError
             ? `Wildberries request failed: ${response.requestError}`
@@ -138,7 +138,7 @@ export class WbBrowserSession {
       try {
         return JSON.parse(response.text) as unknown;
       } catch (error) {
-        throw new WbMcpError("WB_RESPONSE_INVALID", "Wildberries returned a response that is not valid JSON.", {
+        throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned a response that is not valid JSON.", {
           cause: error,
         });
       }
@@ -217,9 +217,9 @@ export class WbBrowserSession {
       });
       return browser;
     } catch (error) {
-      throw new WbMcpError(
+      throw new AvitoMcpError(
         "BROWSER_UNAVAILABLE",
-        `Could not launch ${this.config.browserChannel}. Install the browser or set WB_MCP_BROWSER_CHANNEL/WB_MCP_EXECUTABLE_PATH.`,
+        `Could not launch ${this.config.browserChannel}. Install the browser or set AVITO_MCP_BROWSER_CHANNEL/AVITO_MCP_EXECUTABLE_PATH.`,
         { cause: error },
       );
     }
@@ -249,9 +249,9 @@ export class WbBrowserSession {
       const probe = await this.rawApiRequest(page, SESSION_PROBE_URL);
       if (probe.status !== 200) {
         await context.close().catch(() => undefined);
-        throw new WbMcpError(
+        throw new AvitoMcpError(
           "SESSION_EXPIRED",
-          `The saved Wildberries session is no longer accepted (HTTP ${probe.status}). Run \`wb-shopping-mcp setup\` again.`,
+          `The saved Wildberries session is no longer accepted (HTTP ${probe.status}). Run \`avito-shopping-mcp setup\` again.`,
         );
       }
 

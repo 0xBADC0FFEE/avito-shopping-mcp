@@ -1,6 +1,6 @@
-import { WbBrowserSession } from "./browser-session.js";
+import { AvitoBrowserSession } from "./browser-session.js";
 import type { RuntimeConfig } from "./config.js";
-import { WbMcpError } from "./errors.js";
+import { AvitoMcpError } from "./errors.js";
 import { parseBasketRoutes, parseCatalogProducts, parseFeedbackHost, parseProductCard, parseReviews } from "./parsers.js";
 import type { CatalogProduct } from "./parsers.js";
 import type { ProductDetails, ReviewsResult, SearchItem, SearchResult } from "./types.js";
@@ -15,8 +15,8 @@ import {
   searchApiUrl,
   searchImageUrl,
   sellerPageUrl,
-} from "./wb-api.js";
-import type { BasketRoute } from "./wb-api.js";
+} from "./avito-api.js";
+import type { BasketRoute } from "./avito-api.js";
 
 export type SearchSort = "popular" | "price" | "price_desc" | "rating" | "new";
 
@@ -45,36 +45,36 @@ const PRICING_CONTEXT = "Prices and availability reflect the delivery region sto
 
 export function parseArticle(product: string): number {
   const value = product.trim();
-  if (!value) throw new WbMcpError("INVALID_PRODUCT", "Product must be a Wildberries URL or article number.");
-  if (value.length > 2_048) throw new WbMcpError("INVALID_PRODUCT", "Product value is too long.");
+  if (!value) throw new AvitoMcpError("INVALID_PRODUCT", "Product must be a Wildberries URL or article number.");
+  if (value.length > 2_048) throw new AvitoMcpError("INVALID_PRODUCT", "Product value is too long.");
 
   if (/^https?:\/\//i.test(value)) {
     let url: URL;
     try {
       url = new URL(value);
     } catch (error) {
-      throw new WbMcpError("INVALID_PRODUCT", "Product URL is invalid.", { cause: error });
+      throw new AvitoMcpError("INVALID_PRODUCT", "Product URL is invalid.", { cause: error });
     }
     if (url.protocol !== "https:" || (url.hostname !== "wildberries.ru" && url.hostname !== "www.wildberries.ru")) {
-      throw new WbMcpError("INVALID_PRODUCT", "Only HTTPS product URLs on wildberries.ru are accepted.");
+      throw new AvitoMcpError("INVALID_PRODUCT", "Only HTTPS product URLs on wildberries.ru are accepted.");
     }
     const article = url.pathname.match(/^\/catalog\/(\d+)\/detail\.aspx$/)?.[1];
-    if (!article) throw new WbMcpError("INVALID_PRODUCT", "The URL is not a Wildberries product page.");
+    if (!article) throw new AvitoMcpError("INVALID_PRODUCT", "The URL is not a Wildberries product page.");
     return validArticle(article);
   }
 
   if (!/^\d+$/.test(value)) {
-    throw new WbMcpError("INVALID_PRODUCT", "Product must be a Wildberries URL or article number.");
+    throw new AvitoMcpError("INVALID_PRODUCT", "Product must be a Wildberries URL or article number.");
   }
   return validArticle(value);
 }
 
 export function buildSearchFilters(input: SearchInput): Record<string, string> {
   const query = input.query.trim();
-  if (!query) throw new WbMcpError("REQUEST_FAILED", "Search query cannot be empty.");
-  if (query.length > MAX_QUERY_LENGTH) throw new WbMcpError("REQUEST_FAILED", "Search query is too long.");
+  if (!query) throw new AvitoMcpError("REQUEST_FAILED", "Search query cannot be empty.");
+  if (query.length > MAX_QUERY_LENGTH) throw new AvitoMcpError("REQUEST_FAILED", "Search query is too long.");
   if (input.priceMin !== undefined && input.priceMax !== undefined && input.priceMin > input.priceMax) {
-    throw new WbMcpError("REQUEST_FAILED", "priceMin cannot be greater than priceMax.");
+    throw new AvitoMcpError("REQUEST_FAILED", "priceMin cannot be greater than priceMax.");
   }
 
   const filters: Record<string, string> = { query, sort: SORT_VALUES[input.sort ?? "popular"] };
@@ -86,12 +86,12 @@ export function buildSearchFilters(input: SearchInput): Record<string, string> {
   return filters;
 }
 
-export class WbClient {
-  private readonly session: WbBrowserSession;
+export class AvitoClient {
+  private readonly session: AvitoBrowserSession;
   private cachedRoutes: { routes: BasketRoute[]; fetchedAt: number } | undefined;
 
   constructor(private readonly config: RuntimeConfig) {
-    this.session = new WbBrowserSession(config);
+    this.session = new AvitoBrowserSession(config);
   }
 
   setup(timeoutMs?: number, report?: (message: string) => void) {
@@ -120,7 +120,7 @@ export class WbClient {
     const catalog = await this.catalogProduct(parseArticle(product));
     const routes = await this.basketRoutes();
     const cardUrl = productCardUrl(routes, catalog.article);
-    if (!cardUrl) throw new WbMcpError("WB_RESPONSE_INVALID", "Wildberries has no media host for this product.");
+    if (!cardUrl) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries has no media host for this product.");
     const card = parseProductCard(await this.session.requestJson(cardUrl));
 
     return {
@@ -146,9 +146,9 @@ export class WbClient {
 
   async reviews(product: string, limit = 10): Promise<ReviewsResult> {
     const { rootId } = await this.catalogProduct(parseArticle(product));
-    if (rootId === null) throw new WbMcpError("WB_RESPONSE_INVALID", "Wildberries returned a product without a card id.");
+    if (rootId === null) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned a product without a card id.");
     const host = parseFeedbackHost(await this.session.requestJson(feedbackHostApiUrl(rootId)));
-    if (!host) throw new WbMcpError("WB_RESPONSE_INVALID", "Wildberries returned no review host for this product.");
+    if (!host) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned no review host for this product.");
     return parseReviews(await this.session.requestJson(feedbacksUrl(host, rootId)), limit);
   }
 
@@ -176,7 +176,7 @@ export class WbClient {
     const region = await this.session.regionQuery();
     const products = parseCatalogProducts(await this.session.requestJson(productApiUrl(region, article)));
     const product = products.find((candidate) => candidate.article === article);
-    if (!product) throw new WbMcpError("PRODUCT_NOT_FOUND", `Wildberries has no product with article ${article}.`);
+    if (!product) throw new AvitoMcpError("PRODUCT_NOT_FOUND", `Wildberries has no product with article ${article}.`);
     return product;
   }
 
@@ -185,7 +185,7 @@ export class WbClient {
       return this.cachedRoutes.routes;
     }
     const routes = parseBasketRoutes(await this.session.requestJson(BASKET_ROUTES_URL));
-    if (!routes.length) throw new WbMcpError("WB_RESPONSE_INVALID", "Wildberries returned no media hosts.");
+    if (!routes.length) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned no media hosts.");
     this.cachedRoutes = { routes, fetchedAt: Date.now() };
     return routes;
   }
@@ -194,7 +194,7 @@ export class WbClient {
 function validArticle(digits: string): number {
   const article = Number(digits);
   if (!Number.isSafeInteger(article) || article <= 0) {
-    throw new WbMcpError("INVALID_PRODUCT", "Article number is out of range.");
+    throw new AvitoMcpError("INVALID_PRODUCT", "Article number is out of range.");
   }
   return article;
 }
