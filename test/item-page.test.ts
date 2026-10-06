@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { htmlToText, parseItem, parseSellerUserKey, readBuyerItem } from "../src/item-page.js";
-import { at } from "../src/json-fields.js";
+import { at, object } from "../src/json-fields.js";
 import { itemPageHtml, jsonFixture } from "./fixture.js";
 
 const PAGE_URL = "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574";
 
 describe("readBuyerItem", () => {
   const buyerItem = readBuyerItem(itemPageHtml(at(jsonFixture("item-hydration-buyerItem.json"), "buyerItem")));
+  const item = object(buyerItem.item);
 
   it("decodes the double-encoded hydration state into listing details", () => {
     expect(parseItem(buyerItem, PAGE_URL)).toEqual({
@@ -38,6 +39,14 @@ describe("readBuyerItem", () => {
         url: "https://www.avito.ru/brands/03ce308a3e5989378d53c4f1b2f80718",
       },
     });
+  });
+
+  it.each([
+    ["an expired item", { item: { ...item, isExpired: true } }],
+    ["a closed item", { item: { ...item, isClosed: true } }],
+    ["a closed-item banner", { closedItem: { status: "closed" } }],
+  ])("reports %s as inactive", (_case, change) => {
+    expect(parseItem({ ...buyerItem, ...change }, PAGE_URL).active).toBe(false);
   });
 
   it("finds the seller key used by the reviews endpoint", () => {

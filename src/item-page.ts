@@ -40,7 +40,7 @@ export function parseItem(buyerItem: JsonObject, pageUrl: string): ItemDetails {
     id: required(integer(item.id), `${BUYER_ITEM_PATH}.item.id`),
     title: required(text(item.title), `${BUYER_ITEM_PATH}.item.title`),
     url: required(publicUrl(text(item.url) ?? pageUrl), `${BUYER_ITEM_PATH}.item.url`),
-    active: activeStatus(item),
+    active: activeStatus(buyerItem, item),
     price: hasPrice ? (integer(item.price) ?? integer(at(item, "formattedPrice", "value"))) : null,
     priceText: hasPrice ? htmlToText(at(item, "formattedPrice", "formatedString")) : null,
     description: htmlToText(item.description),
@@ -92,10 +92,18 @@ function hydrationData(html: string): unknown {
   }
 }
 
-function activeStatus(item: JsonObject): boolean | null {
-  const active = boolean(item.isActive);
-  if (active === null) return null;
-  return active && boolean(item.isClosed) !== true;
+function activeStatus(buyerItem: JsonObject, item: JsonObject): boolean | null {
+  if (isClosed(buyerItem, item)) return false;
+  return boolean(item.isActive);
+}
+
+function isClosed(buyerItem: JsonObject, item: JsonObject): boolean {
+  return (
+    boolean(item.isClosed) === true ||
+    boolean(item.isExpired) === true ||
+    boolean(buyerItem.closedItem) === true ||
+    object(buyerItem.closedItem) !== null
+  );
 }
 
 function characteristic(entry: unknown): Characteristic | null {
