@@ -1,20 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="500" viewBox="0 0 1600 500" role="img" aria-labelledby="title desc">
-  <title id="title">WB Shopping MCP</title>
-  <desc id="desc">Dark typographic banner with Wildberries purple to magenta accents</desc>
+  <title id="title">Avito Shopping MCP</title>
+  <desc id="desc">Dark typographic banner with Avito blue, violet, and red accents</desc>
   <defs>
-    <linearGradient id="mcpGradient" gradientUnits="userSpaceOnUse" x1="987" y1="0" x2="1112" y2="0">
-      <stop offset="0" stop-color="#7F3BDB"/>
-      <stop offset="0.52" stop-color="#A11AC9"/>
-      <stop offset="1" stop-color="#F5108F"/>
+    <linearGradient id="mcpGradient" gradientUnits="userSpaceOnUse" x1="1050" y1="0" x2="1175" y2="0">
+      <stop offset="0" stop-color="#00AAFF"/>
+      <stop offset="0.52" stop-color="#965EEB"/>
+      <stop offset="1" stop-color="#FF4053"/>
     </linearGradient>
     <linearGradient id="barGradient" gradientUnits="userSpaceOnUse" x1="260" y1="0" x2="680" y2="0">
-      <stop offset="0" stop-color="#7F3BDB"/>
-      <stop offset="0.52" stop-color="#A11AC9"/>
-      <stop offset="1" stop-color="#F5108F"/>
+      <stop offset="0" stop-color="#00AAFF"/>
+      <stop offset="0.52" stop-color="#965EEB"/>
+      <stop offset="1" stop-color="#FF4053"/>
     </linearGradient>
   </defs>
 
-  <rect width="1600" height="500" fill="#160A26"/>
+  <rect width="1600" height="500" fill="#0A1220"/>
 
   <text
     x="800"
@@ -24,7 +24,7 @@
     font-weight="700"
     letter-spacing="-4"
     text-anchor="middle"
-  ><tspan fill="#FFFFFF">WB Shopping </tspan><tspan fill="url(#mcpGradient)">MCP</tspan></text>
+  ><tspan fill="#FFFFFF">Avito Shopping </tspan><tspan fill="url(#mcpGradient)">MCP</tspan></text>
 
   <rect x="260" y="304" width="1080" height="4" rx="2" fill="#FFFFFF" opacity="0.16"/>
   <rect x="260" y="304" width="420" height="4" rx="2" fill="url(#barGradient)"/>

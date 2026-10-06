@@ -1,20 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
-  <title id="title">WB Shopping MCP</title>
-  <desc id="desc">GitHub social preview for the unofficial WB Shopping MCP server</desc>
+  <title id="title">Avito Shopping MCP</title>
+  <desc id="desc">GitHub social preview for the unofficial Avito Shopping MCP server</desc>
   <defs>
-    <linearGradient id="mcpGradient" gradientUnits="userSpaceOnUse" x1="806" y1="0" x2="916" y2="0">
-      <stop offset="0" stop-color="#7F3BDB"/>
-      <stop offset="0.52" stop-color="#A11AC9"/>
-      <stop offset="1" stop-color="#F5108F"/>
+    <linearGradient id="mcpGradient" gradientUnits="userSpaceOnUse" x1="861" y1="0" x2="971" y2="0">
+      <stop offset="0" stop-color="#00AAFF"/>
+      <stop offset="0.52" stop-color="#965EEB"/>
+      <stop offset="1" stop-color="#FF4053"/>
     </linearGradient>
     <linearGradient id="barGradient" gradientUnits="userSpaceOnUse" x1="220" y1="0" x2="548" y2="0">
-      <stop offset="0" stop-color="#7F3BDB"/>
-      <stop offset="0.52" stop-color="#A11AC9"/>
-      <stop offset="1" stop-color="#F5108F"/>
+      <stop offset="0" stop-color="#00AAFF"/>
+      <stop offset="0.52" stop-color="#965EEB"/>
+      <stop offset="1" stop-color="#FF4053"/>
     </linearGradient>
   </defs>
 
-  <rect width="1280" height="640" fill="#160A26"/>
+  <rect width="1280" height="640" fill="#0A1220"/>
 
   <text
     x="640"
@@ -36,7 +36,7 @@
     font-weight="700"
     letter-spacing="-4"
     text-anchor="middle"
-  ><tspan fill="#FFFFFF">WB Shopping </tspan><tspan fill="url(#mcpGradient)">MCP</tspan></text>
+  ><tspan fill="#FFFFFF">Avito Shopping </tspan><tspan fill="url(#mcpGradient)">MCP</tspan></text>
 
   <rect x="220" y="352" width="840" height="4" rx="2" fill="#FFFFFF" opacity="0.16"/>
   <rect x="220" y="352" width="328" height="4" rx="2" fill="url(#barGradient)"/>
@@ -51,5 +51,5 @@
     font-weight="500"
     letter-spacing="0"
     text-anchor="middle"
-  >Search products · Compare prices · Read reviews</text>
+  >Search listings · Check sellers · Read reviews</text>
 </svg>
