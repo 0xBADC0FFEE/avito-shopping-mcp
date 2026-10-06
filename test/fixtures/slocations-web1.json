@@ -1,0 +1,68 @@
+{
+  "_requests": [
+    "GET https://www.avito.ru/web/1/slocations?limit=5&q=Казань",
+    "GET https://www.avito.ru/web/1/slocations?limit=3&q=Москва"
+  ],
+  "_captured": "2026-10-06, page-context fetch() and raw curl (this endpoint answered 200 even to plain curl while HTML/items were blocked; but an ASCII query 'kazan' returned an empty list — use Cyrillic names)",
+  "_note": "no slug in response; get the slug from the 'url' field of /web/1/js/items?locationId=<id> (e.g. /kazan/...) or from item.location.slug on an item card. Known ids: Россия (all) 621540, Москва 637640, Москва и МО 107620, Московская область 637680, Казань 650400.",
+  "kazan": {
+    "result": {
+      "locations": [
+        {
+          "parent": {
+            "names": {
+              "1": "Республика Татарстан"
+            },
+            "id": 650130
+          },
+          "names": {
+            "1": "Казань"
+          },
+          "id": 650400
+        },
+        {
+          "names": {
+            "1": "Республика Татарстан"
+          },
+          "id": 650130
+        }
+      ]
+    }
+  },
+  "moskva": {
+    "result": {
+      "locations": [
+        {
+          "names": {
+            "1": "Москва"
+          },
+          "id": 637640
+        },
+        {
+          "names": {
+            "1": "Москва и МО"
+          },
+          "id": 107620
+        },
+        {
+          "names": {
+            "1": "Московская область"
+          },
+          "id": 637680
+        },
+        {
+          "parent": {
+            "names": {
+              "1": "Москва"
+            },
+            "id": 637640
+          },
+          "names": {
+            "1": "Новая Москва"
+          },
+          "id": 637642
+        }
+      ]
+    }
+  }
+}

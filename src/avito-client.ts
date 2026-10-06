@@ -1,94 +1,65 @@
+import { apiUrl, itemPageUrl, locationsApiUrl, MOSCOW, searchApiUrl, sellerRatingsUrl } from "./avito-api.js";
 import { AvitoBrowserSession } from "./browser-session.js";
 import type { RuntimeConfig } from "./config.js";
 import { AvitoMcpError } from "./errors.js";
-import { parseBasketRoutes, parseCatalogProducts, parseFeedbackHost, parseProductCard, parseReviews } from "./parsers.js";
-import type { CatalogProduct } from "./parsers.js";
-import type { ProductDetails, ReviewsResult, SearchItem, SearchResult } from "./types.js";
-import {
-  BASKET_ROUTES_URL,
-  feedbackHostApiUrl,
-  feedbacksUrl,
-  productApiUrl,
-  productCardUrl,
-  productImageUrls,
-  productPageUrl,
-  searchApiUrl,
-  searchImageUrl,
-  sellerPageUrl,
-} from "./avito-api.js";
-import type { BasketRoute } from "./avito-api.js";
-
-export type SearchSort = "popular" | "price" | "price_desc" | "rating" | "new";
+import { parseItem, parseSellerUserKey, readBuyerItem } from "./item-page.js";
+import { parseLocations, parseRatingsPage, parseSearchPage } from "./parsers.js";
+import type { ItemDetails, Location, SearchResult, SearchSort, SellerReview, SellerReviewsResult } from "./types.js";
 
 export interface SearchInput {
   query: string;
-  sort?: SearchSort;
+  location?: string | undefined;
+  sort?: SearchSort | undefined;
   priceMin?: number | undefined;
   priceMax?: number | undefined;
+  page?: number | undefined;
   limit?: number | undefined;
 }
 
-const SORT_VALUES: Record<SearchSort, string> = {
-  popular: "popular",
-  price: "priceup",
-  price_desc: "pricedown",
-  rating: "rate",
-  new: "newly",
-};
-
 const MAX_QUERY_LENGTH = 200;
-const UNBOUNDED_PRICE_RUB = 99_999_999;
-const KOPECKS_PER_RUBLE = 100;
-const MAX_PRODUCT_IMAGES = 10;
-const BASKET_ROUTES_TTL_MS = 60 * 60_000;
-const PRICING_CONTEXT = "Prices and availability reflect the delivery region stored in the Wildberries session.";
+const MAX_ITEM_INPUT_LENGTH = 2_048;
+const DEFAULT_SEARCH_LIMIT = 20;
+const DEFAULT_REVIEWS_LIMIT = 10;
+const ITEM_HOSTS = new Set(["avito.ru", "www.avito.ru", "m.avito.ru"]);
+const ITEM_PATH = /^\/(?:(\d+)|[^/]+\/[^/]+\/[^/]+_(\d+))\/?$/;
+const CYRILLIC = /\p{Script=Cyrillic}/u;
+const ITEM_INPUT_HINT = "Item must be an avito.ru listing URL or a numeric listing id.";
 
-export function parseArticle(product: string): number {
-  const value = product.trim();
-  if (!value) throw new AvitoMcpError("INVALID_PRODUCT", "Product must be a Wildberries URL or article number.");
-  if (value.length > 2_048) throw new AvitoMcpError("INVALID_PRODUCT", "Product value is too long.");
+export function parseItemId(input: string): number {
+  const value = input.trim();
+  if (!value) throw new AvitoMcpError("INVALID_ITEM", ITEM_INPUT_HINT);
+  if (value.length > MAX_ITEM_INPUT_LENGTH) throw new AvitoMcpError("INVALID_ITEM", "Item value is too long.");
+  if (/^\d+$/.test(value)) return validItemId(value);
+  if (!/^https?:\/\//i.test(value)) throw new AvitoMcpError("INVALID_ITEM", ITEM_INPUT_HINT);
 
-  if (/^https?:\/\//i.test(value)) {
-    let url: URL;
-    try {
-      url = new URL(value);
-    } catch (error) {
-      throw new AvitoMcpError("INVALID_PRODUCT", "Product URL is invalid.", { cause: error });
-    }
-    if (url.protocol !== "https:" || (url.hostname !== "wildberries.ru" && url.hostname !== "www.wildberries.ru")) {
-      throw new AvitoMcpError("INVALID_PRODUCT", "Only HTTPS product URLs on wildberries.ru are accepted.");
-    }
-    const article = url.pathname.match(/^\/catalog\/(\d+)\/detail\.aspx$/)?.[1];
-    if (!article) throw new AvitoMcpError("INVALID_PRODUCT", "The URL is not a Wildberries product page.");
-    return validArticle(article);
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch (error) {
+    throw new AvitoMcpError("INVALID_ITEM", "Item URL is invalid.", { cause: error });
   }
-
-  if (!/^\d+$/.test(value)) {
-    throw new AvitoMcpError("INVALID_PRODUCT", "Product must be a Wildberries URL or article number.");
+  if (url.protocol !== "https:" || !ITEM_HOSTS.has(url.hostname)) {
+    throw new AvitoMcpError("INVALID_ITEM", "Only HTTPS listing URLs on avito.ru are accepted.");
   }
-  return validArticle(value);
+  const match = url.pathname.match(ITEM_PATH);
+  const id = match?.[1] ?? match?.[2];
+  if (!id) throw new AvitoMcpError("INVALID_ITEM", "The URL is not an Avito listing page.");
+  return validItemId(id);
 }
 
-export function buildSearchFilters(input: SearchInput): Record<string, string> {
+export function validSearchQuery(input: SearchInput): string {
   const query = input.query.trim();
   if (!query) throw new AvitoMcpError("REQUEST_FAILED", "Search query cannot be empty.");
   if (query.length > MAX_QUERY_LENGTH) throw new AvitoMcpError("REQUEST_FAILED", "Search query is too long.");
   if (input.priceMin !== undefined && input.priceMax !== undefined && input.priceMin > input.priceMax) {
     throw new AvitoMcpError("REQUEST_FAILED", "priceMin cannot be greater than priceMax.");
   }
-
-  const filters: Record<string, string> = { query, sort: SORT_VALUES[input.sort ?? "popular"] };
-  if (input.priceMin !== undefined || input.priceMax !== undefined) {
-    const from = (input.priceMin ?? 0) * KOPECKS_PER_RUBLE;
-    const to = (input.priceMax ?? UNBOUNDED_PRICE_RUB) * KOPECKS_PER_RUBLE;
-    filters.priceU = `${from};${to}`;
-  }
-  return filters;
+  return query;
 }
 
 export class AvitoClient {
   private readonly session: AvitoBrowserSession;
-  private cachedRoutes: { routes: BasketRoute[]; fetchedAt: number } | undefined;
+  private readonly locations = new Map<string, Location>([[locationKey(MOSCOW.name), MOSCOW]]);
 
   constructor(private readonly config: RuntimeConfig) {
     this.session = new AvitoBrowserSession(config);
@@ -99,57 +70,42 @@ export class AvitoClient {
   }
 
   async search(input: SearchInput): Promise<SearchResult> {
-    const limit = input.limit ?? 12;
-    const filters = buildSearchFilters(input);
-    const region = await this.session.regionQuery();
-    const products = parseCatalogProducts(await this.session.requestJson(searchApiUrl(region, filters)));
-    const routes = await this.basketRoutes();
-    const items = products
-      .flatMap((product) => (product.price === null ? [] : [searchItem(product, product.price, routes)]))
-      .slice(0, limit);
-    return {
-      query: input.query.trim(),
-      sort: input.sort ?? "popular",
-      count: items.length,
-      items,
-      pricingContext: PRICING_CONTEXT,
-    };
+    const query = validSearchQuery(input);
+    const location = await this.resolveLocation(input.location ?? MOSCOW.name);
+    const sort = input.sort ?? "default";
+    const page = input.page ?? 1;
+    const result = parseSearchPage(
+      await this.session.requestJson(
+        searchApiUrl({ query, locationId: location.id, sort, page, priceMin: input.priceMin, priceMax: input.priceMax }),
+      ),
+    );
+    const items = result.items.slice(0, input.limit ?? DEFAULT_SEARCH_LIMIT);
+    return { query, location, sort, page, totalCount: result.totalCount, count: items.length, items };
   }
 
-  async product(product: string): Promise<ProductDetails> {
-    const catalog = await this.catalogProduct(parseArticle(product));
-    const routes = await this.basketRoutes();
-    const cardUrl = productCardUrl(routes, catalog.article);
-    if (!cardUrl) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries has no media host for this product.");
-    const card = parseProductCard(await this.session.requestJson(cardUrl));
-
-    return {
-      article: catalog.article,
-      name: catalog.name,
-      brand: catalog.brand,
-      category: card.category,
-      url: productPageUrl(catalog.article),
-      price: catalog.price,
-      oldPrice: catalog.oldPrice,
-      available: catalog.stock > 0,
-      rating: catalog.rating,
-      reviewCount: catalog.reviewCount,
-      seller: catalog.seller
-        ? { name: catalog.seller.name, rating: catalog.seller.rating, url: sellerPageUrl(catalog.seller.id) }
-        : null,
-      images: productImageUrls(routes, catalog.article, Math.min(catalog.imageCount, MAX_PRODUCT_IMAGES)),
-      characteristics: card.characteristics,
-      description: card.description,
-      pricingContext: PRICING_CONTEXT,
-    };
+  async item(item: string): Promise<ItemDetails> {
+    const { buyerItem, url } = await this.loadBuyerItem(parseItemId(item));
+    return parseItem(buyerItem, url);
   }
 
-  async reviews(product: string, limit = 10): Promise<ReviewsResult> {
-    const { rootId } = await this.catalogProduct(parseArticle(product));
-    if (rootId === null) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned a product without a card id.");
-    const host = parseFeedbackHost(await this.session.requestJson(feedbackHostApiUrl(rootId)));
-    if (!host) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned no review host for this product.");
-    return parseReviews(await this.session.requestJson(feedbacksUrl(host, rootId)), limit);
+  async sellerReviews(item: string, limit = DEFAULT_REVIEWS_LIMIT): Promise<SellerReviewsResult> {
+    const { buyerItem, url } = await this.loadBuyerItem(parseItemId(item));
+    const listing = parseItem(buyerItem, url);
+    let page = parseRatingsPage(await this.session.requestJson(sellerRatingsUrl(parseSellerUserKey(buyerItem))));
+    const summary = page.summary;
+    const reviews: SellerReview[] = [...page.reviews];
+    while (reviews.length < limit && page.nextPage !== null && page.reviews.length > 0) {
+      page = parseRatingsPage(await this.session.requestJson(apiUrl(page.nextPage)));
+      reviews.push(...page.reviews);
+    }
+    const selected = reviews.slice(0, limit);
+    return {
+      listing: { id: listing.id, title: listing.title, url: listing.url },
+      seller: listing.seller,
+      rating: summary,
+      count: selected.length,
+      reviews: selected,
+    };
   }
 
   async health(live = false) {
@@ -172,45 +128,36 @@ export class AvitoClient {
     return this.session.close();
   }
 
-  private async catalogProduct(article: number): Promise<CatalogProduct> {
-    const region = await this.session.regionQuery();
-    const products = parseCatalogProducts(await this.session.requestJson(productApiUrl(region, article)));
-    const product = products.find((candidate) => candidate.article === article);
-    if (!product) throw new AvitoMcpError("PRODUCT_NOT_FOUND", `Wildberries has no product with article ${article}.`);
-    return product;
-  }
-
-  private async basketRoutes(): Promise<BasketRoute[]> {
-    if (this.cachedRoutes && Date.now() - this.cachedRoutes.fetchedAt < BASKET_ROUTES_TTL_MS) {
-      return this.cachedRoutes.routes;
+  private async resolveLocation(name: string): Promise<Location> {
+    const key = locationKey(name);
+    const cached = this.locations.get(key);
+    if (cached) return cached;
+    if (!CYRILLIC.test(key)) {
+      throw new AvitoMcpError("LOCATION_NOT_FOUND", "Location must be a Russian city or region name, e.g. Казань.");
     }
-    const routes = parseBasketRoutes(await this.session.requestJson(BASKET_ROUTES_URL));
-    if (!routes.length) throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned no media hosts.");
-    this.cachedRoutes = { routes, fetchedAt: Date.now() };
-    return routes;
+
+    const candidates = parseLocations(await this.session.requestJson(locationsApiUrl(name.trim())));
+    const location = candidates.find((candidate) => locationKey(candidate.name) === key) ?? candidates[0];
+    if (!location) throw new AvitoMcpError("LOCATION_NOT_FOUND", `Avito knows no location named "${name.trim()}".`);
+    this.locations.set(key, location);
+    return location;
+  }
+
+  private async loadBuyerItem(id: number) {
+    const page = await this.session.requestHtml(itemPageUrl(id));
+    if (!page) throw new AvitoMcpError("ITEM_NOT_FOUND", `Avito has no listing with id ${id}.`);
+    return { buyerItem: readBuyerItem(page.html), url: page.url };
   }
 }
 
-function validArticle(digits: string): number {
-  const article = Number(digits);
-  if (!Number.isSafeInteger(article) || article <= 0) {
-    throw new AvitoMcpError("INVALID_PRODUCT", "Article number is out of range.");
-  }
-  return article;
+function locationKey(name: string): string {
+  return name.trim().toLocaleLowerCase("ru-RU");
 }
 
-function searchItem(product: CatalogProduct, price: number, routes: BasketRoute[]): SearchItem {
-  return {
-    article: product.article,
-    name: product.name,
-    brand: product.brand,
-    price,
-    oldPrice: product.oldPrice,
-    discountPercent: product.oldPrice ? Math.round((1 - price / product.oldPrice) * 100) : null,
-    rating: product.rating,
-    reviewCount: product.reviewCount,
-    seller: product.seller?.name ?? null,
-    url: productPageUrl(product.article),
-    image: searchImageUrl(routes, product.article),
-  };
+function validItemId(digits: string): number {
+  const id = Number(digits);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    throw new AvitoMcpError("INVALID_ITEM", "Listing id is out of range.");
+  }
+  return id;
 }

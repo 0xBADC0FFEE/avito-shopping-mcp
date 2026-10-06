@@ -1,97 +1,104 @@
-export const WB_HOME_URL = "https://www.wildberries.ru/";
-export const BASKET_ROUTES_URL = "https://cdn.wbbasket.ru/api/v3/upstreams";
+import type { Location, SearchSort } from "./types.js";
 
-// Moscow delivery point, used when the session has no stored region.
-const DEFAULT_REGION_QUERY = "appType=1&curr=rub&dest=-1257786&spp=30";
-const SEARCH_API_URL = "https://www.wildberries.ru/__internal/u-search/exactmatch/ru/common/v18/search";
-const PRODUCT_API_URL = "https://www.wildberries.ru/__internal/u-card/cards/v4/detail";
-const FEEDBACK_HOST_API_URL = "https://feedback-bt.wildberries.ru/feedback/api/v2/host";
-const ALLOWED_HOST_SUFFIXES = ["wildberries.ru", "wb.ru", "wbbasket.ru"];
-const ARTICLES_PER_VOL = 100_000;
-const ARTICLES_PER_PART = 1_000;
-const SEARCH_IMAGE_SIZE = "c516x688";
+export const AVITO_ORIGIN = "https://www.avito.ru";
+export const AVITO_HOME_URL = `${AVITO_ORIGIN}/`;
+export const MOSCOW: Location = { id: 637_640, name: "Москва" };
 
-export interface BasketRoute {
-  volFrom: number;
-  volTo: number;
-  host: string;
+const REQUEST_HOST = new URL(AVITO_ORIGIN).hostname;
+const OUTPUT_HOST_SUFFIXES = ["avito.ru", "avito.st"];
+const SEARCH_API_PATH = "/web/1/js/items";
+const LOCATIONS_API_PATH = "/web/1/slocations";
+const LOCATION_CANDIDATES = 10;
+const RATINGS_PAGE_SIZE = 25;
+const SORT_PARAMS: Record<SearchSort, string> = {
+  default: "101",
+  price: "1",
+  price_desc: "2",
+  date: "104",
+  discount: "172297_desc",
+};
+
+export interface SearchQuery {
+  query: string;
+  locationId: number;
+  sort: SearchSort;
+  page: number;
+  priceMin?: number | undefined;
+  priceMax?: number | undefined;
 }
 
-export function isAllowedHost(hostname: string): boolean {
-  return ALLOWED_HOST_SUFFIXES.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
+export function searchApiUrl(search: SearchQuery): string {
+  const params = new URLSearchParams({
+    query: search.query,
+    locationId: String(search.locationId),
+    s: SORT_PARAMS[search.sort],
+    p: String(search.page),
+  });
+  if (search.priceMin !== undefined) params.set("pmin", String(search.priceMin));
+  if (search.priceMax !== undefined) params.set("pmax", String(search.priceMax));
+  return `${AVITO_ORIGIN}${SEARCH_API_PATH}?${params.toString()}`;
 }
 
-export function isAllowedApiUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && isAllowedHost(url.hostname);
-  } catch {
-    return false;
-  }
+export const SESSION_PROBE_URL = searchApiUrl({ query: "iphone", locationId: MOSCOW.id, sort: "default", page: 1 });
+
+export function locationsApiUrl(name: string): string {
+  const params = new URLSearchParams({ limit: String(LOCATION_CANDIDATES), q: name });
+  return `${AVITO_ORIGIN}${LOCATIONS_API_PATH}?${params.toString()}`;
+}
+
+export function itemPageUrl(id: number): string {
+  return `${AVITO_ORIGIN}/${id}`;
+}
+
+export function sellerRatingsUrl(userKey: string): string {
+  const params = new URLSearchParams({
+    summary_redesign: "1",
+    sortRating: "date_desc",
+    limit: String(RATINGS_PAGE_SIZE),
+    offset: "0",
+  });
+  return `${AVITO_ORIGIN}/web/7/user/${encodeURIComponent(userKey)}/ratings?${params.toString()}`;
+}
+
+export function apiUrl(pathOrUrl: string): string {
+  return new URL(pathOrUrl, AVITO_ORIGIN).toString();
 }
 
 /**
- * Turns the region query Wildberries stores in the session (`geo-data-v1-0.data.xinfo`) into API parameters.
- * @param xinfo Raw stored value; anything without a numeric `dest` is ignored.
- * @returns Query string with currency and delivery destination.
+ * Turns a site path or URL from an Avito response into a shareable absolute link.
+ * @param pathOrUrl Relative path (resolved against www.avito.ru) or absolute URL.
+ * @returns HTTPS URL on an Avito host without query and fragment, or `null` for anything else.
  */
-export function regionQuery(xinfo: unknown): string {
-  if (typeof xinfo !== "string") return DEFAULT_REGION_QUERY;
-  const params = new URLSearchParams(xinfo);
-  return /^-?\d+$/.test(params.get("dest") ?? "") ? params.toString() : DEFAULT_REGION_QUERY;
+export function publicUrl(pathOrUrl: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(pathOrUrl, AVITO_ORIGIN);
+  } catch {
+    return null;
+  }
+  if (!isAllowedOutputUrl(url.toString())) return null;
+  url.search = "";
+  url.hash = "";
+  return url.toString();
 }
 
-export function searchApiUrl(region: string, filters: Record<string, string>): string {
-  const params = new URLSearchParams(region);
-  params.set("lang", "ru");
-  params.set("resultset", "catalog");
-  params.set("page", "1");
-  for (const [name, value] of Object.entries(filters)) params.set(name, value);
-  return `${SEARCH_API_URL}?${params.toString()}`;
+export function isAllowedRequestUrl(value: string): boolean {
+  const url = parsedUrl(value);
+  return url?.protocol === "https:" && url.hostname === REQUEST_HOST;
 }
 
-export const SESSION_PROBE_URL = searchApiUrl(DEFAULT_REGION_QUERY, { query: "wildberries", sort: "popular" });
-
-export function productApiUrl(region: string, article: number): string {
-  const params = new URLSearchParams(region);
-  params.set("lang", "ru");
-  params.set("nm", String(article));
-  return `${PRODUCT_API_URL}?${params.toString()}`;
-}
-
-export function feedbackHostApiUrl(rootId: number): string {
-  return `${FEEDBACK_HOST_API_URL}?imt=${rootId}`;
-}
-
-export function feedbacksUrl(feedbackHost: string, rootId: number): string {
-  return `${feedbackHost.replace(/\/+$/, "")}/feedbacks/v2/${rootId}`;
-}
-
-export function productPageUrl(article: number): string {
-  return `https://www.wildberries.ru/catalog/${article}/detail.aspx`;
-}
-
-export function sellerPageUrl(sellerId: number): string {
-  return `https://www.wildberries.ru/seller/${sellerId}`;
-}
-
-function basketUrl(routes: BasketRoute[], article: number, path: string): string | null {
-  const vol = Math.floor(article / ARTICLES_PER_VOL);
-  const part = Math.floor(article / ARTICLES_PER_PART);
-  const route = routes.find((candidate) => vol >= candidate.volFrom && vol <= candidate.volTo);
-  return route ? `https://${route.host}/vol${vol}/part${part}/${article}/${path}` : null;
-}
-
-export function productCardUrl(routes: BasketRoute[], article: number): string | null {
-  return basketUrl(routes, article, "info/ru/card.json");
-}
-
-export function searchImageUrl(routes: BasketRoute[], article: number): string | null {
-  return basketUrl(routes, article, `images/${SEARCH_IMAGE_SIZE}/1.webp`);
-}
-
-export function productImageUrls(routes: BasketRoute[], article: number, count: number): string[] {
-  return Array.from({ length: count }, (_, index) => basketUrl(routes, article, `images/big/${index + 1}.webp`)).filter(
-    (url): url is string => url !== null,
+export function isAllowedOutputUrl(value: string): boolean {
+  const url = parsedUrl(value);
+  return (
+    url?.protocol === "https:" &&
+    OUTPUT_HOST_SUFFIXES.some((suffix) => url.hostname === suffix || url.hostname.endsWith(`.${suffix}`))
   );
+}
+
+function parsedUrl(value: string): URL | null {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
 }

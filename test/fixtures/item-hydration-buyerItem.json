@@ -1,0 +1,325 @@
+{
+  "_request": "GET https://www.avito.ru/8457820574 (fetch follows redirect to canonical item URL; HTML 200, ~620 KB)",
+  "_extract": "window.__staticRouterHydrationData = JSON.parse(\"<JSON string literal>\") -> .loaderData[\"catalog-or-main-or-item\"].buyerItem",
+  "_captured": "2026-10-06, page-context fetch() from https://www.avito.ru tab, no login",
+  "_finalUrl": "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574",
+  "_note": "sanitized subset of buyerItem; seller name redacted; badge style objects dropped; arrays truncated",
+  "buyerItemKeys": [
+    "abFeatures",
+    "abacPolicies",
+    "abuse",
+    "actionScenario",
+    "advancedParamsBlock",
+    "advertisementStyle",
+    "appIndexingUrls",
+    "autoParams",
+    "bargainOffer",
+    "cVState",
+    "campaigns",
+    "carMarketPrice",
+    "closedItem",
+    "closedItemSerpLink",
+    "closedItemSerpLinkText",
+    "closedItemStatus",
+    "comparison",
+    "complementarySections",
+    "contactBarInfo",
+    "country",
+    "crCalculatorButton",
+    "creditInfo",
+    "currentPage",
+    "currentUserId",
+    "developmentAdvice",
+    "developmentVisit",
+    "employerRatingBanner",
+    "favoriteSeller",
+    "fromPage",
+    "ga",
+    "galleryInfo",
+    "googleJobPosting",
+    "gorelkinText",
+    "hasWysiwyg",
+    "icebreakers",
+    "icebreakersPosition",
+    "inGalleryButtons",
+    "installmentsInfo",
+    "isBot",
+    "isCartEnabled",
+    "isCompany",
+    "isConsultationFormEnable",
+    "isHidePhone",
+    "isItemActiveOrUserHasAccess",
+    "isLogin",
+    "isMyItem",
+    "isNoAdsAuto",
+    "isRealtyExpert",
+    "isRecaptchaEnabled",
+    "isShareEnabled",
+    "isShopIsApproved",
+    "isShowBigDeal",
+    "isShowShopItemsSimilar",
+    "isShowShopLink",
+    "isShowShopShowPromoBlock",
+    "isSplitAdvertBlock",
+    "isTwoColonGalleryAndParamLayout",
+    "item",
+    "itemCardRedesign",
+    "itemReviews",
+    "itemReviewsCommon",
+    "itemSocials",
+    "linkLoggerShop",
+    "messengerSocketFallback",
+    "mortgageCalculator",
+    "nativeVideo",
+    "newStyle",
+    "nonce",
+    "normalizedPricePostfix",
+    "offers",
+    "paramsBlock",
+    "paramsDto",
+    "priceBadge",
+    "priceDataDTO",
+    "priceString",
+    "publicProfile",
+    "rating",
+    "ratingAction",
+    "realtyIcebreakersPosition",
+    "realtyImv",
+    "recallmeRequest",
+    "reservationInfo",
+    "resumeParamsBlock",
+    "rmp",
+    "rubPricePostfix",
+    "rubSign",
+    "safeDealDesktop",
+    "schemaOrgBreadcrumbs",
+    "schemaOrgHotel",
+    "searchFormDto",
+    "searchHash",
+    "seller",
+    "seoCanonicalUrl",
+    "seoDescription",
+    "seoImageData",
+    "seoSiteName",
+    "seoTags",
+    "seoTitle",
+    "servicesApplicationFilling",
+    "servicesImv",
+    "servicesModelCardInfo",
+    "shouldAddLog",
+    "shouldShowAdsPriceBanner",
+    "shouldShowGeoBeforeParams",
+    "shouldShowLeasing",
+    "shouldShowMortgageBroker",
+    "toggles",
+    "userHashedId",
+    "viewStat",
+    "weborama"
+  ],
+  "buyerItem": {
+    "item": {
+      "id": 8457820574,
+      "title": "Кофемашина delonghi magnifica rapid cappuccino",
+      "url": "/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574",
+      "price": 14000,
+      "formattedPrice": {
+        "currencySign": "₽",
+        "discount": null,
+        "formatedString": "14 000&nbsp;₽",
+        "isHasValue": true,
+        "isWasLowered": false,
+        "oldString": "",
+        "postfix": "",
+        "string": "14 000",
+        "value": 14000
+      },
+      "description": "<p>Кофе машина Делонги , регулярное , обслуживание , отлично работает, есть небольшой нюанс , не влияет на работу, фото и дополнительную информацию в личном сообщении отправлю</p>",
+      "address": "Москва, ул. Охотный Ряд",
+      "geo": {
+        "address": "Москва, ул. Охотный Ряд",
+        "addressTitle": "Местоположение",
+        "coords": {
+          "lat": 55.75753784,
+          "lng": 37.61641312,
+          "zoom": 16
+        },
+        "references": []
+      },
+      "location": {
+        "coords": {
+          "lat": 55.755814,
+          "lng": 37.617635,
+          "zoom": 16
+        },
+        "name": "Москва",
+        "slug": "moskva"
+      },
+      "locationId": 637640,
+      "category": {
+        "id": 21,
+        "isGoods": true,
+        "parentId": 2,
+        "parentSlug": "dlya_doma_i_dachi",
+        "slug": "bytovaya_tehnika",
+        "parent": {
+          "id": 2,
+          "slug": "dlya_doma_i_dachi"
+        }
+      },
+      "categoryId": 21,
+      "imageUrls": [
+        {
+          "1280x960": "https://b00.img.avito.st/image/1/1.wWqMF7a4bYO6oO-OgkjuGIi3b4Uytu-VurtvgTy-ZYk6.eppuhSy6We3Kqgm1KqfW8aDtkoOEhKyEJE5ZOBZW-NA?cqp=2.YN7dHnrK-mhyvtTBpyubvaFoUVdTM3W7BFy5YaeXzZ_Q2glMrBb_s4irqaJhHlfJPgeDGUqVXQ==",
+          "640x480": "https://b00.img.avito.st/image/1/1.wWqMF7a4bYO6vq-GgkjuGIi3b4Uytu-L-rNvgTy-ZYk6.7-3v0xy8euEzpD0CDXsWrD7roBPGF-K3x8d2f4HXpSE?cqp=2.YN7dHnrK-mhyvtTBpyubvaFoUVdTM3W7BFy5YaeXzZ_Q2glMrBb_s4irqaJhHlfJPgeDGUqVXQ==",
+          "_note": "also 150x110, 75x55 keys"
+        }
+      ],
+      "images": [
+        58276724508
+      ],
+      "sortFormatedDate": "сегодня в 21:11",
+      "finishTime": 1793902294,
+      "isActive": true,
+      "isClosed": false,
+      "statusId": 4,
+      "seller": {
+        "avatar": "https://www.avito.st/stub_avatars/%D0%92/13_256x256.png",
+        "tenureMedal": "марта 2015",
+        "tenureSince": "gold",
+        "verification": {
+          "anyBadge": false,
+          "isInnVerified": false,
+          "isVerifiedSeller": false
+        }
+      },
+      "sellerBadgeBar": {
+        "badges": [],
+        "iconsBadges": [
+          {
+            "id": 2359,
+            "title": "Надёжный продавец"
+          },
+          {
+            "id": 31,
+            "title": "Данные подтверждены"
+          },
+          {
+            "id": 102,
+            "title": "Эковклад"
+          }
+        ]
+      },
+      "shop": {
+        "domain": "",
+        "id": null,
+        "isShop": false,
+        "name": "<public seller first name>"
+      },
+      "phone": {
+        "isAnonymousNumber": true,
+        "mask": "8 XXX XXX-XX-XX",
+        "publicPhone": null,
+        "realPhone": null
+      },
+      "breadcrumbs": [
+        {
+          "name": "Главная",
+          "title": "Все объявления в Москве",
+          "url": "/moskva"
+        },
+        {
+          "name": "Для дома и дачи",
+          "title": "Для дома и дачи в Москве",
+          "url": "/moskva/dlya_doma_i_dachi"
+        },
+        {
+          "name": "Бытовая техника",
+          "title": "Бытовая техника в Москве",
+          "url": "/moskva/bytovaya_tehnika"
+        },
+        "…truncated 4 more"
+      ],
+      "seo": {
+        "canonicalUrl": "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574",
+        "ld": "{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"Product\",\"name\":\"…\",\"sku\":\"8457820574\",…  (schema.org JSON-LD as a string)",
+        "title": "Кофемашина delonghi magnifica rapid cappuccino купить в Москве по низкой цене с доставкой | Товары для дома и дачи | Авито"
+      },
+      "searchLocation": [
+        {
+          "current": true,
+          "id": 637640,
+          "isRegion": false,
+          "name": "Москва",
+          "parentId": 621540
+        }
+      ],
+      "deliveryInfo": {
+        "isCart": true,
+        "isCod": true,
+        "isDelivery": true,
+        "isReserved": false
+      }
+    },
+    "paramsBlock": {
+      "items": [
+        {
+          "attributeId": 110369,
+          "description": "Б/у",
+          "title": "Состояние"
+        },
+        {
+          "attributeId": 193035,
+          "description": "Автоматическая",
+          "title": "Тип кофемашины"
+        },
+        {
+          "attributeId": 193036,
+          "description": "Delonghi",
+          "title": "Производитель"
+        },
+        "…truncated 4 more (Модель, Цвет, Капучинатор, Тип используемого кофе)"
+      ],
+      "title": "Характеристики"
+    },
+    "viewStat": {
+      "todayViews": 0,
+      "totalViews": 0
+    },
+    "seller": {
+      "avatar": {
+        "defaultUrl": "https://static.avito.ru/stub_avatars/%D0%92/13_256x256.png",
+        "shape": "circle"
+      },
+      "isCompany": false,
+      "labels": {
+        "nominative": "Частное лицо"
+      },
+      "name": "<public seller first name>",
+      "replyTimeText": "Отвечает за несколько часов",
+      "shopUrl": "",
+      "tenureMedal": "gold",
+      "tenureSince": "марта 2015"
+    },
+    "publicProfile": {
+      "closedItemsCount": null,
+      "link": "https://www.avito.ru/brands/03ce308a3e5989378d53c4f1b2f80718?gdlkerfdnwq=101&page_from=from_item_header&iid=8457820574",
+      "summary": "28 объявлений"
+    },
+    "rating": {
+      "activeReviewsCount": 156,
+      "scoreFloat": 5,
+      "summary": "155 отзывов",
+      "userKey": "badabb72359d5efbfcfa34413989c41d0cef27381d6000072e45cd298ea3c607"
+    },
+    "userHashedId": "<hash>",
+    "isCompany": false
+  },
+  "domMarkers": {
+    "item-view/item-id": "№ 8457820574",
+    "item-view/item-date": "· сегодня в 21:11",
+    "item-view/total-views": "0 просмотров",
+    "item-view/today-views": "(+0 сегодня)",
+    "item-view/item-params": "Характеристики Состояние: Б/у …",
+    "item-view/item-description": "<description text>"
+  }
+}

@@ -49,7 +49,7 @@ export class SessionStore {
         if ((mode & 0o077) !== 0) {
           throw new AvitoMcpError(
             "SESSION_REQUIRED",
-            "The saved Wildberries session has unsafe filesystem permissions. Run setup again.",
+            "The saved Avito session has unsafe filesystem permissions. Run setup again.",
           );
         }
       }
@@ -58,7 +58,7 @@ export class SessionStore {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new AvitoMcpError(
           "SESSION_REQUIRED",
-          "No Wildberries browser session found. Run `avito-shopping-mcp setup` first.",
+          "No Avito browser session found. Run `avito-shopping-mcp setup` first.",
         );
       }
       throw error;
@@ -68,13 +68,13 @@ export class SessionStore {
     try {
       parsed = JSON.parse(raw);
     } catch (error) {
-      throw new AvitoMcpError("SESSION_REQUIRED", "The saved Wildberries session is not valid JSON. Run setup again.", {
+      throw new AvitoMcpError("SESSION_REQUIRED", "The saved Avito session is not valid JSON. Run setup again.", {
         cause: error,
       });
     }
 
     if (!isPersistedSession(parsed)) {
-      throw new AvitoMcpError("SESSION_REQUIRED", "The saved Wildberries session has an unsupported format. Run setup again.");
+      throw new AvitoMcpError("SESSION_REQUIRED", "The saved Avito session has an unsupported format. Run setup again.");
     }
     return parsed;
   }

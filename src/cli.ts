@@ -21,10 +21,10 @@ function printHelp(): void {
   console.log(`avito-shopping-mcp ${VERSION}
 
 Usage:
-  avito-shopping-mcp setup [--timeout 120]  Create or refresh the local Wildberries session
-  avito-shopping-mcp doctor                Verify configuration and the saved session
-  avito-shopping-mcp serve                 Run the MCP server over stdio
-  avito-shopping-mcp help                  Show this help
+  avito-shopping-mcp setup [--timeout 120]  Create or refresh the local Avito session
+  avito-shopping-mcp doctor                 Verify configuration and the saved session
+  avito-shopping-mcp serve                  Run the MCP server over stdio
+  avito-shopping-mcp help                   Show this help
 `);
 }
 

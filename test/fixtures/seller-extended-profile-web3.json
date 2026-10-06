@@ -1,0 +1,68 @@
+{
+  "_request": "GET https://www.avito.ru/web/3/user/{userKey}/extended-profile   (userKey = buyerItem.rating.userKey; the /brands/<slug> returns {\"result\":{\"message\":\"Пользователь не найден\"},\"status\":\"not-found\"})",
+  "_captured": "2026-10-06, page-context fetch() from https://www.avito.ru tab, no login",
+  "_note": "sanitized; beduin/places blobs dropped; only widget names listed except base_info. NOTE: base_info.rating.nextPage points to /web/4/.../ratings, which returns nginx 404 — use /web/7/.../ratings instead.",
+  "status": "ok",
+  "result": {
+    "type": "extended",
+    "valueKeys": [
+      "beduin",
+      "data",
+      "places",
+      "widgets"
+    ],
+    "data": {
+      "username": "<public first name>",
+      "profileType": "person",
+      "seo": {
+        "canonicalUrl": "https://www.avito.ru/brands/03ce308a3e5989378d53c4f1b2f80718"
+      }
+    },
+    "widgets": [
+      {
+        "name": "base_info",
+        "value": {
+          "description": "На Авито с марта 2015",
+          "hashUserId": "badabb72359d5efbfcfa34413989c41d0cef27381d6000072e45cd298ea3c607",
+          "rating": {
+            "action": {},
+            "activeReviewsCount": 156,
+            "hideStars": false,
+            "nextPage": "/web/4/user/badabb72359d5efbfcfa34413989c41d0cef27381d6000072e45cd298ea3c607/ratings",
+            "score": 5,
+            "scoreFloat": 5,
+            "summary": "155 отзывов",
+            "uri": "/user/review?fid=…",
+            "useStarsReviewCount": 155
+          },
+          "subscribeInfo": {
+            "isSubscribed": false,
+            "subscribers": {
+              "subtitle": "подписчиков",
+              "title": "16"
+            },
+            "subscriptions": {
+              "subtitle": "подписок",
+              "title": "0"
+            }
+          }
+        }
+      },
+      {
+        "name": "badgebar_v3"
+      },
+      {
+        "name": "subscribe_info"
+      },
+      {
+        "name": "seller_promotions"
+      },
+      {
+        "name": "item_list_with_filters"
+      },
+      {
+        "name": "rating_and_reviews"
+      }
+    ]
+  }
+}

@@ -2,10 +2,12 @@ export type AvitoErrorCode =
   | "SESSION_REQUIRED"
   | "SESSION_EXPIRED"
   | "AVITO_BLOCKED"
+  | "AVITO_RATE_LIMITED"
   | "AVITO_RESPONSE_INVALID"
   | "BROWSER_UNAVAILABLE"
-  | "INVALID_PRODUCT"
-  | "PRODUCT_NOT_FOUND"
+  | "INVALID_ITEM"
+  | "ITEM_NOT_FOUND"
+  | "LOCATION_NOT_FOUND"
   | "REQUEST_FAILED";
 
 export class AvitoMcpError extends Error {

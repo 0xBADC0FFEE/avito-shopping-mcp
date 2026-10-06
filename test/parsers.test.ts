@@ -1,152 +1,112 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  parseBasketRoutes,
-  parseCatalogProducts,
-  parseFeedbackHost,
-  parseProductCard,
-  parseReviews,
-} from "../src/parsers.js";
+import { at } from "../src/json-fields.js";
+import { parseLocations, parseRatingsPage, parseSearchPage } from "../src/parsers.js";
+import { jsonFixture } from "./fixture.js";
 
-describe("parseCatalogProducts", () => {
-  it("converts kopeck prices and picks the cheapest size", () => {
-    const [product] = parseCatalogProducts({
-      products: [
-        {
-          id: 1222039104,
-          root: 2893516906,
-          name: "Смартфон iPhone 15 128 ГБ",
-          brand: "Apple",
-          supplier: "Example Seller",
-          supplierId: 1121282,
-          supplierRating: 4.8,
-          pics: 11,
-          reviewRating: 4.9,
-          rating: 5,
-          feedbacks: 6,
-          totalQuantity: 31,
-          sizes: [
-            { price: { basic: 11_486_300, product: 4_503_900 } },
-            { price: { basic: 11_486_300, product: 4_203_950 } },
-            { name: "sold out" },
-          ],
-        },
-      ],
-    });
+const INVALID_RESPONSE = { code: "AVITO_RESPONSE_INVALID" };
 
-    expect(product).toEqual({
-      article: 1_222_039_104,
-      rootId: 2_893_516_906,
-      name: "Смартфон iPhone 15 128 ГБ",
-      brand: "Apple",
-      price: 42_040,
-      oldPrice: 114_863,
-      stock: 31,
-      rating: 4.9,
-      reviewCount: 6,
-      seller: { id: 1_121_282, name: "Example Seller", rating: 4.8 },
-      imageCount: 11,
+describe("parseSearchPage", () => {
+  const response = jsonFixture("search-web1-js-items.json");
+
+  it("extracts listings with absolute URLs, ISO timestamps, and the seller block", () => {
+    const page = parseSearchPage(response);
+    expect(page.totalCount).toBe(600);
+    expect(page.items).toHaveLength(2);
+    expect(page.items[0]).toEqual({
+      id: 8_457_820_574,
+      title: "Кофемашина delonghi magnifica rapid cappuccino",
+      price: 14_000,
+      priceText: "14 000 ₽",
+      url: "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574",
+      location: null,
+      publishedAt: "2026-10-06T18:11:34.000Z",
+      image: expect.stringMatching(/^https:\/\/b00\.img\.avito\.st\/image\//),
+      seller: {
+        name: "<public seller first name>",
+        url: "https://www.avito.ru/brands/03ce308a3e5989378d53c4f1b2f80718",
+        rating: 5,
+      },
     });
   });
 
-  it("treats products without reviews as unrated and without discount as full price", () => {
-    const [product] = parseCatalogProducts({
-      products: [{ id: 1, rating: 0, reviewRating: 0, feedbacks: 0, sizes: [{ price: { basic: 1_000, product: 1_000 } }] }],
-    });
-    expect(product).toMatchObject({ rating: null, oldPrice: null, price: 10, stock: 0, seller: null });
+  it("leaves the seller empty when Avito shows no seller block", () => {
+    expect(parseSearchPage(response).items[1]).toMatchObject({ id: 8_544_880_758, price: 9_500, seller: null });
   });
 
-  it("skips entries without an article", () => {
-    expect(parseCatalogProducts({ products: [{ name: "broken" }] })).toEqual([]);
-    expect(parseCatalogProducts({})).toEqual([]);
-  });
-});
-
-describe("parseProductCard", () => {
-  it("extracts category, description, and characteristics", () => {
-    expect(
-      parseProductCard({
-        subj_name: "Смартфоны",
-        description: " Оригинальный смартфон ",
-        options: [{ name: "Цвет", value: "голубой" }, { name: "Пустое", value: "" }, { value: "без имени" }],
-      }),
-    ).toEqual({ category: "Смартфоны", description: "Оригинальный смартфон", characteristics: { Цвет: "голубой" } });
-  });
-});
-
-describe("parseBasketRoutes", () => {
-  it("reads origin range routes and drops foreign hosts", () => {
-    const routes = parseBasketRoutes({
-      origin: {
-        mediabasket_route_map: [
-          {
-            method: "range",
-            hosts: [
-              { vol_range_from: 0, vol_range_to: 143, host: "basket-01.wbbasket.ru" },
-              { vol_range_from: 144, vol_range_to: 287, host: "basket.example.com" },
-            ],
-          },
+  it("skips non-listing entries and reports a missing price", () => {
+    const page = parseSearchPage({
+      totalCount: 1,
+      catalog: {
+        items: [
+          { type: "banner" },
+          { type: "item", id: 1, title: "Диван", urlPath: "/kazan/mebel/divan_1", priceDetailed: { hasValue: false, fullString: "Цена не указана" } },
         ],
       },
     });
-    expect(routes).toEqual([{ volFrom: 0, volTo: 143, host: "basket-01.wbbasket.ru" }]);
+    expect(page.items).toEqual([expect.objectContaining({ id: 1, price: null, priceText: "Цена не указана", publishedAt: null })]);
+  });
+
+  it("names the missing path when the format changes", () => {
+    expect(() => parseSearchPage({ url: "/moskva" })).toThrow(expect.objectContaining(INVALID_RESPONSE));
+    expect(() => parseSearchPage({ url: "/moskva" })).toThrow(/catalog\.items/);
+    expect(() => parseSearchPage({ totalCount: 1, catalog: { items: [{ type: "item", title: "x" }] } })).toThrow(
+      /catalog\.items\[0\]\.id/,
+    );
   });
 });
 
-describe("parseFeedbackHost", () => {
-  it("returns the first Wildberries review host", () => {
-    expect(parseFeedbackHost(["https://example.com", "https://feedback-view-02.wb.ru"])).toBe(
-      "https://feedback-view-02.wb.ru",
-    );
-    expect(parseFeedbackHost({})).toBeNull();
+describe("parseLocations", () => {
+  it("reads location ids and names", () => {
+    expect(parseLocations(at(jsonFixture("slocations-web1.json"), "kazan"))).toEqual([
+      { id: 650_400, name: "Казань" },
+      { id: 650_130, name: "Республика Татарстан" },
+    ]);
+  });
+
+  it("rejects a response without a location list", () => {
+    expect(() => parseLocations({ result: {} })).toThrow(/result\.locations/);
   });
 });
 
-describe("parseReviews", () => {
-  it("returns the newest reviews first", () => {
-    const result = parseReviews(
-      {
-        valuation: "4.5",
-        feedbackCount: 819,
-        feedbacks: [
-          {
-            wbUserDetails: { name: "Павел" },
-            productValuation: 4,
-            text: "Нормально",
-            createdDate: "2026-07-01T10:00:00Z",
-          },
-          {
-            wbUserDetails: { name: "Вероника" },
-            productValuation: 5,
-            text: "Всё работает",
-            pros: "Быстро",
-            color: "черный",
-            createdDate: "2026-09-12T18:18:50Z",
-            votes: { pluses: 7, minuses: 0 },
-            photos: [{ key: "2/photo" }],
-          },
-        ],
-      },
-      1,
-    );
+describe("parseRatingsPage", () => {
+  const page = parseRatingsPage(jsonFixture("seller-ratings-web7.json"));
 
-    expect(result).toEqual({
-      rating: 4.5,
-      totalReviews: 819,
-      count: 1,
-      reviews: [
-        {
-          author: "Вероника",
-          score: 5,
-          comment: "Всё работает",
-          pros: "Быстро",
-          cons: "",
-          variant: "черный",
-          date: "2026-09-12",
-          useful: 7,
-          hasPhotos: true,
-        },
+  it("summarizes the seller rating", () => {
+    expect(page.summary).toEqual({
+      score: 5,
+      reviewCount: 155,
+      distribution: [
+        { score: 5, count: 154 },
+        { score: 4, count: 1 },
+        { score: 3, count: 0 },
+        { score: 2, count: 0 },
+        { score: 1, count: 0 },
       ],
     });
+  });
+
+  it("reads reviews with the reviewer role, deal stage, and seller answer", () => {
+    expect(page.reviews).toHaveLength(3);
+    expect(page.reviews[0]).toEqual({
+      score: 5,
+      date: "сегодня",
+      role: "Продавец",
+      itemTitle: null,
+      stage: null,
+      text: "Всё отлично 👍 Покупателя рекомендую",
+      answer: null,
+    });
+    expect(page.reviews[2]).toMatchObject({
+      role: "Покупатель",
+      itemTitle: "Велосипед Paruisi U8 26''",
+      stage: "Сделка сорвалась",
+      answer: "Спасибо большое",
+    });
+  });
+
+  it("exposes the next page link until the last page", () => {
+    expect(page.nextPage).toMatch(/^\/web\/7\/user\/[0-9a-f]+\/ratings\?.*offset=25/);
+    expect(parseRatingsPage({ entries: [] })).toEqual({ summary: null, reviews: [], nextPage: null });
   });
 });

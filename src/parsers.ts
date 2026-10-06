@@ -1,174 +1,111 @@
-import type { ProductReview, ReviewsResult } from "./types.js";
-import { isAllowedApiUrl, isAllowedHost } from "./avito-api.js";
-import type { BasketRoute } from "./avito-api.js";
+import { isAllowedOutputUrl, publicUrl } from "./avito-api.js";
+import { array, at, decimal, integer, isPresent, list, required, text } from "./json-fields.js";
+import type { Location, RatingSummary, ScoreCount, SearchItem, SearchSeller, SellerReview } from "./types.js";
 
-type JsonObject = Record<string, unknown>;
-
-const KOPECKS_PER_RUBLE = 100;
-
-export interface CatalogSeller {
-  id: number;
-  name: string;
-  rating: number | null;
+export interface SearchPage {
+  totalCount: number;
+  items: SearchItem[];
 }
 
-export interface CatalogProduct {
-  article: number;
-  rootId: number | null;
-  name: string | null;
-  brand: string | null;
-  price: number | null;
-  oldPrice: number | null;
-  stock: number;
-  rating: number | null;
-  reviewCount: number | null;
-  seller: CatalogSeller | null;
-  imageCount: number;
+export interface RatingsPage {
+  summary: RatingSummary | null;
+  reviews: SellerReview[];
+  nextPage: string | null;
 }
 
-export interface ProductCardInfo {
-  category: string | null;
-  description: string | null;
-  characteristics: Record<string, string>;
-}
+const LISTING_TYPE = "item";
+const SEARCH_IMAGE_SIZE = "636x636";
+const SELLER_INFO_COMPONENT = "seller-info";
+const SCORE_ENTRY = "score";
+const REVIEW_ENTRY = "rating";
 
-interface Offer {
-  price: number;
-  oldPrice: number | null;
-}
-
-export function parseCatalogProducts(response: unknown): CatalogProduct[] {
-  return array(at(response, "products")).map(catalogProduct).filter(isPresent);
-}
-
-export function parseProductCard(card: unknown): ProductCardInfo {
-  const characteristics: Record<string, string> = {};
-  for (const option of array(at(card, "options"))) {
-    const name = text(at(option, "name"));
-    const value = text(at(option, "value"));
-    if (name && value) characteristics[name] = value;
-  }
+export function parseSearchPage(response: unknown): SearchPage {
+  const entries = required(list(at(response, "catalog", "items")), "catalog.items");
   return {
-    category: text(at(card, "subj_name")),
-    description: text(at(card, "description")),
-    characteristics,
+    totalCount: required(integer(at(response, "totalCount")), "totalCount"),
+    items: entries
+      .map((entry, index) => (at(entry, "type") === LISTING_TYPE ? searchItem(entry, `catalog.items[${index}]`) : null))
+      .filter(isPresent),
   };
 }
 
-export function parseBasketRoutes(upstreams: unknown): BasketRoute[] {
-  const rangeMap = array(at(upstreams, "origin", "mediabasket_route_map")).find((map) => at(map, "method") === "range");
-  return array(at(rangeMap, "hosts")).flatMap((entry) => {
-    const volFrom = integer(at(entry, "vol_range_from"));
-    const volTo = integer(at(entry, "vol_range_to"));
-    const host = text(at(entry, "host"));
-    return volFrom !== null && volTo !== null && host && isAllowedHost(host) ? [{ volFrom, volTo, host }] : [];
-  });
+export function parseLocations(response: unknown): Location[] {
+  return required(list(at(response, "result", "locations")), "result.locations").map((entry, index) => ({
+    id: required(integer(at(entry, "id")), `result.locations[${index}].id`),
+    name: required(text(at(entry, "names", "1")), `result.locations[${index}].names.1`),
+  }));
 }
 
-export function parseFeedbackHost(response: unknown): string | null {
-  return array(response).map(text).find((host): host is string => host !== null && isAllowedApiUrl(host)) ?? null;
-}
-
-export function parseReviews(response: unknown, limit = 10): ReviewsResult {
-  const reviews = array(at(response, "feedbacks"))
-    .map(object)
-    .filter(isPresent)
-    .sort((left, right) => (text(right.createdDate) ?? "").localeCompare(text(left.createdDate) ?? ""))
-    .slice(0, limit)
-    .map(review);
+export function parseRatingsPage(response: unknown): RatingsPage {
+  const entries = required(list(at(response, "entries")), "entries");
+  const score = entries.find((entry) => at(entry, "type") === SCORE_ENTRY);
   return {
-    rating: decimal(at(response, "valuation")),
-    totalReviews: integer(at(response, "feedbackCount")),
-    count: reviews.length,
-    reviews,
+    summary: score === undefined ? null : ratingSummary(at(score, "value")),
+    reviews: entries.filter((entry) => at(entry, "type") === REVIEW_ENTRY).map((entry) => review(at(entry, "value"))),
+    nextPage: text(at(response, "nextPage")),
   };
 }
 
-function catalogProduct(value: unknown): CatalogProduct | null {
-  const article = integer(at(value, "id"));
-  if (article === null) return null;
-  const offer = cheapestOffer(at(value, "sizes"));
-  const reviewCount = integer(at(value, "feedbacks"));
+function searchItem(entry: unknown, path: string): SearchItem {
+  const hasPrice = at(entry, "priceDetailed", "hasValue") !== false;
+  const publishedAt = integer(at(entry, "sortTimeStamp"));
+  const image = text(at(array(at(entry, "images"))[0], SEARCH_IMAGE_SIZE));
   return {
-    article,
-    rootId: integer(at(value, "root")),
-    name: text(at(value, "name")),
-    brand: text(at(value, "brand")),
-    price: offer?.price ?? null,
-    oldPrice: offer?.oldPrice ?? null,
-    stock: integer(at(value, "totalQuantity")) ?? 0,
-    // Unrated products report a rating of 0.
-    rating: reviewCount ? (decimal(at(value, "reviewRating")) ?? decimal(at(value, "rating"))) : null,
-    reviewCount,
-    seller: catalogSeller(value),
-    imageCount: integer(at(value, "pics")) ?? 0,
+    id: required(integer(at(entry, "id")), `${path}.id`),
+    title: required(text(at(entry, "title")), `${path}.title`),
+    price: hasPrice ? integer(at(entry, "priceDetailed", "value")) : null,
+    priceText: displayText(at(entry, "priceDetailed", "fullString")),
+    url: required(publicUrl(required(text(at(entry, "urlPath")), `${path}.urlPath`)), `${path}.urlPath`),
+    location: text(at(entry, "addressDetailed", "locationName")) ?? text(at(entry, "geo", "formattedAddress")),
+    publishedAt: publishedAt === null ? null : new Date(publishedAt).toISOString(),
+    image: image !== null && isAllowedOutputUrl(image) ? image : null,
+    seller: searchSeller(entry),
   };
 }
 
-function catalogSeller(product: unknown): CatalogSeller | null {
-  const id = integer(at(product, "supplierId"));
-  const name = text(at(product, "supplier"));
-  return id !== null && name ? { id, name, rating: decimal(at(product, "supplierRating")) } : null;
-}
-
-function cheapestOffer(sizes: unknown): Offer | null {
-  let cheapest: Offer | null = null;
-  for (const size of array(sizes)) {
-    const price = rubles(at(size, "price", "product"));
-    if (price === null || (cheapest && cheapest.price <= price)) continue;
-    const basic = rubles(at(size, "price", "basic"));
-    cheapest = { price, oldPrice: basic !== null && basic > price ? basic : null };
-  }
-  return cheapest;
-}
-
-function review(feedback: JsonObject): ProductReview {
+function searchSeller(entry: unknown): SearchSeller | null {
+  const sellerInfo = array(at(entry, "iva", "UserInfoStep")).find(
+    (step) => at(step, "componentData", "component") === SELLER_INFO_COMPONENT,
+  );
+  const name = text(at(sellerInfo, "payload", "profile", "title"));
+  if (!name) return null;
+  const link = text(at(sellerInfo, "payload", "profile", "link"));
   return {
-    author: text(at(feedback, "wbUserDetails", "name")),
-    score: decimal(feedback.productValuation),
-    comment: text(feedback.text) ?? "",
-    pros: text(feedback.pros) ?? "",
-    cons: text(feedback.cons) ?? "",
-    variant: text(feedback.color),
-    date: text(feedback.createdDate)?.slice(0, "YYYY-MM-DD".length) ?? null,
-    useful: integer(at(feedback, "votes", "pluses")),
-    hasPhotos: array(feedback.photos).length > 0,
+    name,
+    url: link === null ? null : publicUrl(link),
+    rating: decimal(at(sellerInfo, "payload", "rating", "score")) ?? decimal(at(entry, "rating", "score")),
   };
 }
 
-function rubles(kopecks: unknown): number | null {
-  return typeof kopecks === "number" && Number.isFinite(kopecks) ? Math.round(kopecks / KOPECKS_PER_RUBLE) : null;
+function displayText(value: unknown): string | null {
+  return text(typeof value === "string" ? value.replace(/\u00a0/g, " ") : value);
 }
 
-function integer(value: unknown): number | null {
-  return typeof value === "number" && Number.isSafeInteger(value) ? value : null;
+function ratingSummary(value: unknown): RatingSummary {
+  return {
+    score: decimal(at(value, "scoreFloat")) ?? decimal(at(value, "score")),
+    reviewCount: integer(at(value, "reviewCount")),
+    distribution: array(at(value, "ratingStat")).map(scoreCount).filter(isPresent),
+  };
 }
 
-function decimal(value: unknown): number | null {
-  const parsed = typeof value === "string" ? Number.parseFloat(value) : value;
-  return typeof parsed === "number" && Number.isFinite(parsed) ? parsed : null;
+function scoreCount(value: unknown): ScoreCount | null {
+  const score = integer(at(value, "score"));
+  const count = integer(at(value, "count"));
+  return score === null || count === null ? null : { score, count };
 }
 
-function text(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function object(value: unknown): JsonObject | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : null;
-}
-
-function array(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function at(value: unknown, ...keys: string[]): unknown {
-  let current: unknown = value;
-  for (const key of keys) {
-    current = object(current)?.[key];
-  }
-  return current;
-}
-
-function isPresent<T>(value: T | null): value is T {
-  return value !== null;
+function review(value: unknown): SellerReview {
+  return {
+    score: integer(at(value, "score")),
+    date: text(at(value, "rated")),
+    role: text(at(value, "titleCaption")),
+    itemTitle: text(at(value, "itemTitle")),
+    stage: text(at(value, "stageTitle")),
+    text: array(at(value, "textSections"))
+      .map((section) => text(at(section, "text")))
+      .filter(isPresent)
+      .join("\n"),
+    answer: text(at(value, "answer", "text")),
+  };
 }

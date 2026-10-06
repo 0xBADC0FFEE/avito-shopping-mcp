@@ -1,23 +1,39 @@
 import { chromium } from "playwright";
 import type { Browser, BrowserContext, LaunchOptions, Page } from "playwright";
 
+import { AVITO_HOME_URL, isAllowedRequestUrl, SESSION_PROBE_URL } from "./avito-api.js";
+import { BLOCK_PAGE_TITLE_PREFIX, classifyResponse, isBlockPageTitle } from "./block-detection.js";
 import type { RuntimeConfig } from "./config.js";
-import { AvitoMcpError } from "./errors.js";
+import { AvitoMcpError, safeError } from "./errors.js";
 import { SerialQueue } from "./serial-queue.js";
 import { SessionStore } from "./session-store.js";
 import type { PersistedSession } from "./session-store.js";
-import { isAllowedApiUrl, regionQuery, SESSION_PROBE_URL, WB_HOME_URL } from "./avito-api.js";
 
-// Same-origin API calls are rejected by the anti-bot layer without this id as the `deviceid` header.
-const DEVICE_ID_STORAGE_KEY = "wbx__sessionID";
-const GEO_DATA_STORAGE_KEY = "geo-data-v1-0";
-// 498 is the anti-bot "challenge required" status.
-const SESSION_REJECTED_STATUSES = new Set([401, 403, 498]);
+const VIEWPORT = { width: 1440, height: 900 };
+const LOCALE = "ru-RU";
+const DEFAULT_SETUP_TIMEOUT_MS = 120_000;
+const SETUP_POLL_INTERVAL_MS = 2_000;
+const SETUP_PROBE_INTERVAL_MS = 10_000;
+const HOME_SETTLE_MS = 1_000;
+const CHALLENGE_TIMEOUT_MS = 20_000;
+const MAX_REQUEST_JITTER_MS = 2_000;
+const SETUP_COMMAND = "`avito-shopping-mcp setup`";
+const ACCEPT_HEADERS = { json: "application/json", html: "text/html" } as const;
 
-interface RawApiResponse {
+type ContentType = keyof typeof ACCEPT_HEADERS;
+
+type SetupOutcome = { ready: true } | { ready: false; lastStatus: number | undefined };
+
+interface RawResponse {
   status: number;
   text: string;
+  url: string;
   requestError?: string;
+}
+
+export interface FetchedPage {
+  url: string;
+  html: string;
 }
 
 export interface SetupResult {
@@ -29,8 +45,7 @@ export interface SetupResult {
 
 export interface LiveSessionCheck {
   ok: boolean;
-  status?: number;
-  error?: string;
+  error?: ReturnType<typeof safeError>;
 }
 
 type ProgressReporter = (message: string) => void;
@@ -48,58 +63,25 @@ export class AvitoBrowserSession {
     this.store = new SessionStore(config.stateFile);
   }
 
-  async setup(timeoutMs = 120_000, report: ProgressReporter = () => undefined): Promise<SetupResult> {
+  async setup(timeoutMs = DEFAULT_SETUP_TIMEOUT_MS, report: ProgressReporter = () => undefined): Promise<SetupResult> {
     await this.close();
-    report("Opening a temporary Chrome window for Wildberries session setup…");
+    report("Opening a temporary Chrome window for Avito session setup…");
 
     const browser = await this.launch(false);
-    const context = await browser.newContext({
-      viewport: { width: 1440, height: 900 },
-      locale: "ru-RU",
-    });
+    const context = await browser.newContext({ viewport: VIEWPORT, locale: LOCALE });
     const page = await context.newPage();
 
     try {
-      await page.goto(WB_HOME_URL, {
-        waitUntil: "domcontentloaded",
-        timeout: this.config.navigationTimeoutMs,
-      });
-
-      const deadline = Date.now() + timeoutMs;
-      let lastStatus: number | undefined;
-      while (Date.now() < deadline) {
-        if (page.isClosed()) {
-          throw new AvitoMcpError("REQUEST_FAILED", "The setup browser window was closed before Wildberries became ready.");
-        }
-
-        await page.waitForTimeout(1_500);
-        const probe = await this.rawApiRequest(page, SESSION_PROBE_URL);
-        lastStatus = probe.status || lastStatus;
-        if (probe.status === 200) {
-          const createdAt = new Date().toISOString();
-          const userAgent = await page.evaluate(() => navigator.userAgent);
-          const storageState = await context.storageState();
-          const session: PersistedSession = {
-            schemaVersion: 1,
-            createdAt,
-            browserChannel: this.config.browserChannel,
-            userAgent,
-            storageState,
-          };
-          await this.store.save(session);
-          report("Wildberries session is ready and stored locally.");
-          return {
-            createdAt,
-            browserChannel: this.config.browserChannel,
-            stored: true,
-            cookieCount: storageState.cookies.length,
-          };
-        }
+      await this.openHome(page);
+      const outcome = await this.waitForUsableSession(page, timeoutMs, report);
+      if (outcome.ready) {
+        const result = await this.saveSession(page, context);
+        report("Avito session is ready and stored locally.");
+        return result;
       }
-
       throw new AvitoMcpError(
         "AVITO_BLOCKED",
-        `Wildberries did not provide a usable session within ${Math.ceil(timeoutMs / 1000)} seconds${lastStatus ? ` (last HTTP status: ${lastStatus})` : ""}.`,
+        `Avito did not provide a usable session within ${Math.ceil(timeoutMs / 1000)} seconds${outcome.lastStatus ? ` (last HTTP status: ${outcome.lastStatus})` : ""}.`,
       );
     } finally {
       await context.close().catch(() => undefined);
@@ -108,71 +90,39 @@ export class AvitoBrowserSession {
   }
 
   async requestJson(url: string): Promise<unknown> {
-    if (!isAllowedApiUrl(url)) {
-      throw new AvitoMcpError("REQUEST_FAILED", "Refusing to request a host outside Wildberries.");
+    const response = await this.request(url, "json");
+    if (classifyResponse(response) === "not_found") {
+      throw new AvitoMcpError("REQUEST_FAILED", "Avito returned HTTP 404 for an internal endpoint.");
     }
-
-    return this.queue.run(async () => {
-      const page = await this.ensureHeadlessPage();
-      await this.waitForRequestSlot();
-      const response = await this.rawApiRequest(page, url);
-      this.lastRequestAt = Date.now();
-      this.armIdleTimer();
-
-      if (SESSION_REJECTED_STATUSES.has(response.status)) {
-        await this.close();
-        throw new AvitoMcpError(
-          "SESSION_EXPIRED",
-          `Wildberries rejected the saved browser session with HTTP ${response.status}. Run \`avito-shopping-mcp setup\` again.`,
-        );
-      }
-      if (response.status !== 200) {
-        throw new AvitoMcpError(
-          "REQUEST_FAILED",
-          response.requestError
-            ? `Wildberries request failed: ${response.requestError}`
-            : `Wildberries returned unexpected HTTP ${response.status}.`,
-        );
-      }
-
-      try {
-        return JSON.parse(response.text) as unknown;
-      } catch (error) {
-        throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Wildberries returned a response that is not valid JSON.", {
-          cause: error,
-        });
-      }
-    });
+    try {
+      return JSON.parse(response.text) as unknown;
+    } catch (error) {
+      throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Avito returned a response that is not valid JSON.", {
+        cause: error,
+      });
+    }
   }
 
   /**
-   * Reads the delivery region selected in the saved session; prices and stock depend on it.
-   * @returns API query parameters for currency and delivery destination.
+   * Loads an Avito HTML page, following redirects.
+   * @param url HTTPS URL on www.avito.ru.
+   * @returns The final page URL and HTML, or `null` when Avito answers 404.
    */
-  async regionQuery(): Promise<string> {
-    return this.queue.run(async () => {
-      const page = await this.ensureHeadlessPage();
-      const xinfo = await page.evaluate((key) => {
-        try {
-          return (JSON.parse(localStorage.getItem(key) ?? "null") as { data?: { xinfo?: unknown } } | null)?.data?.xinfo;
-        } catch {
-          return undefined;
-        }
-      }, GEO_DATA_STORAGE_KEY);
-      return regionQuery(xinfo);
-    });
+  async requestHtml(url: string): Promise<FetchedPage | null> {
+    const response = await this.request(url, "html");
+    if (classifyResponse(response) === "not_found") return null;
+    if (!isAllowedRequestUrl(response.url)) {
+      throw new AvitoMcpError("AVITO_RESPONSE_INVALID", "Avito redirected outside www.avito.ru.");
+    }
+    return { url: response.url, html: response.text };
   }
 
   async checkLive(): Promise<LiveSessionCheck> {
     try {
-      const page = await this.ensureHeadlessPage();
-      const response = await this.rawApiRequest(page, SESSION_PROBE_URL);
-      this.armIdleTimer();
-      if (response.status === 200) return { ok: true, status: 200 };
-      return { ok: false, status: response.status, error: `Wildberries returned HTTP ${response.status}` };
+      await this.requestJson(SESSION_PROBE_URL);
+      return { ok: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return { ok: false, error: message };
+      return { ok: false, error: safeError(error) };
     }
   }
 
@@ -196,6 +146,115 @@ export class AvitoBrowserSession {
 
     await context?.close().catch(() => undefined);
     await browser?.close().catch(() => undefined);
+  }
+
+  private async waitForUsableSession(
+    page: Page,
+    timeoutMs: number,
+    report: ProgressReporter,
+  ): Promise<SetupOutcome> {
+    const deadline = Date.now() + timeoutMs;
+    let lastStatus: number | undefined;
+    let lastProbeAt = 0;
+    let reportedBlock = false;
+    while (Date.now() < deadline) {
+      await page.waitForTimeout(SETUP_POLL_INTERVAL_MS).catch(() => undefined);
+      if (page.isClosed()) {
+        throw new AvitoMcpError("REQUEST_FAILED", "The setup browser window was closed before Avito became ready.");
+      }
+
+      if (isBlockPageTitle(await page.title().catch(() => ""))) {
+        if (!reportedBlock) report("Avito shows an access check. Complete it in the browser window to continue.");
+        reportedBlock = true;
+        continue;
+      }
+      if (Date.now() - lastProbeAt < SETUP_PROBE_INTERVAL_MS) continue;
+
+      lastProbeAt = Date.now();
+      const probe = await this.rawRequest(page, SESSION_PROBE_URL, "json");
+      if (classifyResponse(probe) === "ok") return { ready: true };
+      lastStatus = probe.status || lastStatus;
+      report(`Avito search answered HTTP ${probe.status}; reloading the home page.`);
+      await this.openHome(page).catch(() => undefined);
+    }
+    return { ready: false, lastStatus };
+  }
+
+  private async saveSession(page: Page, context: BrowserContext): Promise<SetupResult> {
+    const createdAt = new Date().toISOString();
+    const userAgent = await page.evaluate(() => navigator.userAgent);
+    const storageState = await context.storageState();
+    const session: PersistedSession = {
+      schemaVersion: 1,
+      createdAt,
+      browserChannel: this.config.browserChannel,
+      userAgent,
+      storageState,
+    };
+    await this.store.save(session);
+    return { createdAt, browserChannel: this.config.browserChannel, stored: true, cookieCount: storageState.cookies.length };
+  }
+
+  private async request(url: string, contentType: ContentType): Promise<RawResponse> {
+    if (!isAllowedRequestUrl(url)) {
+      throw new AvitoMcpError("REQUEST_FAILED", "Refusing to request a host other than www.avito.ru.");
+    }
+
+    return this.queue.run(async () => {
+      const page = await this.ensureHeadlessPage();
+      let response = await this.throttledRequest(page, url, contentType);
+      if (classifyResponse(response) === "challenge") {
+        await this.passChallenge(page);
+        response = await this.throttledRequest(page, url, contentType);
+      }
+      this.armIdleTimer();
+      await this.assertUsable(response);
+      return response;
+    });
+  }
+
+  private async assertUsable(response: RawResponse): Promise<void> {
+    const verdict = classifyResponse(response);
+    if (verdict === "ok" || verdict === "not_found") return;
+    if (verdict === "rate_limited") {
+      throw new AvitoMcpError(
+        "AVITO_RATE_LIMITED",
+        `Avito temporarily restricted access from this IP (HTTP ${response.status}). Wait at least 20 minutes before retrying, or run ${SETUP_COMMAND} and pass the check in the browser window.`,
+      );
+    }
+    if (verdict === "challenge" || verdict === "session_rejected") {
+      await this.close();
+      throw new AvitoMcpError(
+        "SESSION_EXPIRED",
+        `Avito rejected the saved browser session (HTTP ${response.status}). Run ${SETUP_COMMAND} again.`,
+      );
+    }
+    throw new AvitoMcpError(
+      "REQUEST_FAILED",
+      response.requestError
+        ? `Avito request failed: ${response.requestError}`
+        : `Avito returned unexpected HTTP ${response.status}.`,
+    );
+  }
+
+  private async passChallenge(page: Page): Promise<void> {
+    await this.openHome(page);
+    await page
+      .waitForFunction(
+        (prefix) => !document.title.trim().startsWith(prefix),
+        BLOCK_PAGE_TITLE_PREFIX,
+        { timeout: CHALLENGE_TIMEOUT_MS },
+      )
+      .catch(() => undefined);
+  }
+
+  private async throttledRequest(page: Page, url: string, contentType: ContentType): Promise<RawResponse> {
+    await this.waitForRequestSlot();
+    try {
+      return await this.rawRequest(page, url, contentType);
+    } finally {
+      this.lastRequestAt = Date.now();
+    }
   }
 
   private async launch(headless: boolean): Promise<Browser> {
@@ -234,26 +293,14 @@ export class AvitoBrowserSession {
     const browser = await this.launch(true);
     try {
       const context = await browser.newContext({
-        viewport: { width: 1440, height: 900 },
-        locale: "ru-RU",
+        viewport: VIEWPORT,
+        locale: LOCALE,
         userAgent: saved.userAgent,
         storageState: saved.storageState,
       });
       const page = await context.newPage();
-      await page.goto(WB_HOME_URL, {
-        waitUntil: "domcontentloaded",
-        timeout: this.config.navigationTimeoutMs,
-      });
-      await page.waitForTimeout(1_000);
-
-      const probe = await this.rawApiRequest(page, SESSION_PROBE_URL);
-      if (probe.status !== 200) {
-        await context.close().catch(() => undefined);
-        throw new AvitoMcpError(
-          "SESSION_EXPIRED",
-          `The saved Wildberries session is no longer accepted (HTTP ${probe.status}). Run \`avito-shopping-mcp setup\` again.`,
-        );
-      }
+      await this.openHome(page);
+      await page.waitForTimeout(HOME_SETTLE_MS);
 
       this.browser = browser;
       this.context = context;
@@ -266,35 +313,36 @@ export class AvitoBrowserSession {
     }
   }
 
-  private async rawApiRequest(page: Page, url: string): Promise<RawApiResponse> {
-    const timeoutMs = this.config.requestTimeoutMs;
+  private async openHome(page: Page): Promise<void> {
+    await page.goto(AVITO_HOME_URL, { waitUntil: "domcontentloaded", timeout: this.config.navigationTimeoutMs });
+  }
+
+  private async rawRequest(page: Page, url: string, contentType: ContentType): Promise<RawResponse> {
     return page.evaluate(
-      async ({ requestUrl, timeout, deviceIdKey }) => {
+      async ({ requestUrl, timeout, accept }) => {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeout);
-        const headers: Record<string, string> = { accept: "application/json" };
-        const deviceId = localStorage.getItem(deviceIdKey);
-        if (deviceId && new URL(requestUrl).origin === location.origin) headers.deviceid = deviceId;
         try {
-          const response = await fetch(requestUrl, { headers, signal: controller.signal });
-          return { status: response.status, text: await response.text() };
+          const response = await fetch(requestUrl, { headers: { accept }, signal: controller.signal });
+          return { status: response.status, text: await response.text(), url: response.url };
         } catch (error) {
           return {
             status: 0,
             text: "",
+            url: requestUrl,
             requestError: error instanceof Error ? error.message : String(error),
           };
         } finally {
           clearTimeout(timer);
         }
       },
-      { requestUrl: url, timeout: timeoutMs, deviceIdKey: DEVICE_ID_STORAGE_KEY },
+      { requestUrl: url, timeout: this.config.requestTimeoutMs, accept: ACCEPT_HEADERS[contentType] },
     );
   }
 
   private async waitForRequestSlot(): Promise<void> {
-    const elapsed = Date.now() - this.lastRequestAt;
-    const remaining = this.config.minimumRequestIntervalMs - elapsed;
+    const interval = this.config.minimumRequestIntervalMs + Math.random() * MAX_REQUEST_JITTER_MS;
+    const remaining = interval - (Date.now() - this.lastRequestAt);
     if (remaining > 0) {
       await new Promise<void>((resolve) => setTimeout(resolve, remaining));
     }

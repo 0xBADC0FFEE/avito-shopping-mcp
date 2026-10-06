@@ -1,55 +1,78 @@
 import { describe, expect, it } from "vitest";
 
-import { isAllowedApiUrl, productCardUrl, productImageUrls, regionQuery, searchApiUrl } from "../src/avito-api.js";
-
-const routes = [
-  { volFrom: 0, volTo: 143, host: "basket-01.wbbasket.ru" },
-  { volFrom: 12_000, volTo: 12_500, host: "basket-44.wbbasket.ru" },
-];
-
-describe("regionQuery", () => {
-  it("keeps the region stored by Wildberries", () => {
-    expect(regionQuery("appType=1&curr=rub&dest=1259570991&spp=30")).toBe("appType=1&curr=rub&dest=1259570991&spp=30");
-  });
-
-  it("falls back to Moscow when the stored region has no destination", () => {
-    expect(regionQuery(undefined)).toContain("dest=-1257786");
-    expect(regionQuery("curr=rub&dest=moscow")).toContain("dest=-1257786");
-  });
-});
+import {
+  isAllowedOutputUrl,
+  isAllowedRequestUrl,
+  locationsApiUrl,
+  publicUrl,
+  searchApiUrl,
+  sellerRatingsUrl,
+} from "../src/avito-api.js";
 
 describe("searchApiUrl", () => {
-  it("lets filters override region parameters", () => {
-    const url = new URL(searchApiUrl("curr=rub&dest=1&sort=popular", { query: "мышь", sort: "priceup" }));
-    expect(url.searchParams.get("query")).toBe("мышь");
-    expect(url.searchParams.getAll("sort")).toEqual(["priceup"]);
-    expect(url.searchParams.get("dest")).toBe("1");
-  });
-});
-
-describe("basket routing", () => {
-  it("routes an article to the host serving its volume", () => {
-    expect(productCardUrl(routes, 1_222_039_104)).toBe(
-      "https://basket-44.wbbasket.ru/vol12220/part1222039/1222039104/info/ru/card.json",
+  it("maps sort and price range to Avito parameters", () => {
+    const url = new URL(
+      searchApiUrl({ query: "кофемашина delonghi", locationId: 650_400, sort: "date", page: 2, priceMin: 5_000, priceMax: 60_000 }),
     );
-    expect(productImageUrls(routes, 12_345, 2)).toEqual([
-      "https://basket-01.wbbasket.ru/vol0/part12/12345/images/big/1.webp",
-      "https://basket-01.wbbasket.ru/vol0/part12/12345/images/big/2.webp",
-    ]);
+    expect(url.origin + url.pathname).toBe("https://www.avito.ru/web/1/js/items");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      query: "кофемашина delonghi",
+      locationId: "650400",
+      s: "104",
+      p: "2",
+      pmin: "5000",
+      pmax: "60000",
+    });
   });
 
-  it("returns nothing for a volume no host serves", () => {
-    expect(productCardUrl(routes, 500_000_000)).toBeNull();
-    expect(productImageUrls(routes, 500_000_000, 3)).toEqual([]);
+  it("omits an open price bound", () => {
+    const url = new URL(searchApiUrl({ query: "iphone", locationId: 637_640, sort: "discount", page: 1, priceMax: 100 }));
+    expect(url.searchParams.get("s")).toBe("172297_desc");
+    expect(url.searchParams.has("pmin")).toBe(false);
+    expect(url.searchParams.get("pmax")).toBe("100");
   });
 });
 
-describe("isAllowedApiUrl", () => {
-  it("accepts only HTTPS Wildberries hosts", () => {
-    expect(isAllowedApiUrl("https://feedbacks1.wb.ru/feedbacks/v2/1")).toBe(true);
-    expect(isAllowedApiUrl("https://www.wildberries.ru/__internal/x")).toBe(true);
-    expect(isAllowedApiUrl("http://feedbacks1.wb.ru/feedbacks/v2/1")).toBe(false);
-    expect(isAllowedApiUrl("https://evilwb.ru/")).toBe(false);
-    expect(isAllowedApiUrl("https://wb.ru.example.com/")).toBe(false);
+describe("locationsApiUrl", () => {
+  it("queries location suggestions by Cyrillic name", () => {
+    expect(new URL(locationsApiUrl("Казань")).searchParams.get("q")).toBe("Казань");
+  });
+});
+
+describe("sellerRatingsUrl", () => {
+  it("requests the newest reviews of a seller from the live ratings version", () => {
+    const url = new URL(sellerRatingsUrl("badabb72"));
+    expect(url.pathname).toBe("/web/7/user/badabb72/ratings");
+    expect(url.searchParams.get("sortRating")).toBe("date_desc");
+    expect(url.searchParams.get("offset")).toBe("0");
+  });
+});
+
+describe("publicUrl", () => {
+  it("resolves site paths and drops tracking parameters", () => {
+    expect(publicUrl("/brands/03ce308a?src=search_seller_info&iid=1")).toBe("https://www.avito.ru/brands/03ce308a");
+    expect(publicUrl("https://www.avito.ru/moskva/x_1?context=abc#top")).toBe("https://www.avito.ru/moskva/x_1");
+  });
+
+  it("rejects links outside Avito", () => {
+    expect(publicUrl("https://example.com/brands/1")).toBeNull();
+    expect(publicUrl("//example.com/x")).toBeNull();
+    expect(publicUrl("http://www.avito.ru/x")).toBeNull();
+  });
+});
+
+describe("host allowlists", () => {
+  it("sends requests only to www.avito.ru over HTTPS", () => {
+    expect(isAllowedRequestUrl("https://www.avito.ru/web/1/js/items")).toBe(true);
+    expect(isAllowedRequestUrl("https://m.avito.ru/api/19/items/1")).toBe(false);
+    expect(isAllowedRequestUrl("http://www.avito.ru/")).toBe(false);
+    expect(isAllowedRequestUrl("https://www.avito.ru.example.com/")).toBe(false);
+  });
+
+  it("returns only Avito site and image CDN links", () => {
+    expect(isAllowedOutputUrl("https://70.img.avito.st/image/1/1.abc")).toBe(true);
+    expect(isAllowedOutputUrl("https://www.avito.ru/brands/1")).toBe(true);
+    expect(isAllowedOutputUrl("https://evilavito.st/image")).toBe(false);
+    expect(isAllowedOutputUrl("http://70.img.avito.st/image")).toBe(false);
   });
 });

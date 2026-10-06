@@ -1,64 +1,111 @@
-export interface SearchItem {
-  article: number;
-  name: string | null;
-  brand: string | null;
-  price: number;
-  oldPrice: number | null;
-  discountPercent: number | null;
+export const SEARCH_SORTS = ["default", "price", "price_desc", "date", "discount"] as const;
+export type SearchSort = (typeof SEARCH_SORTS)[number];
+
+export interface Location {
+  id: number;
+  name: string;
+}
+
+export interface SearchSeller {
+  name: string;
+  url: string | null;
   rating: number | null;
-  reviewCount: number | null;
-  seller: string | null;
+}
+
+export interface SearchItem {
+  id: number;
+  title: string;
+  price: number | null;
+  priceText: string | null;
   url: string;
+  location: string | null;
+  publishedAt: string | null;
   image: string | null;
+  seller: SearchSeller | null;
 }
 
 export interface SearchResult {
   query: string;
-  sort: string;
+  location: Location;
+  sort: SearchSort;
+  page: number;
+  totalCount: number;
   count: number;
   items: SearchItem[];
-  pricingContext: string;
 }
 
-export interface Seller {
+export interface Characteristic {
   name: string;
-  rating: number | null;
-  url: string;
+  value: string;
 }
 
-export interface ProductDetails {
-  article: number;
-  name: string | null;
-  brand: string | null;
-  category: string | null;
-  url: string;
-  price: number | null;
-  oldPrice: number | null;
-  available: boolean;
-  rating: number | null;
-  reviewCount: number | null;
-  seller: Seller | null;
-  images: string[];
-  characteristics: Record<string, string>;
-  description: string | null;
-  pricingContext: string;
+export interface Coordinates {
+  lat: number;
+  lng: number;
 }
 
-export interface ProductReview {
-  author: string | null;
+export interface ItemViews {
+  total: number | null;
+  today: number | null;
+}
+
+export interface SellerRatingBadge {
   score: number | null;
-  comment: string;
-  pros: string;
-  cons: string;
-  variant: string | null;
-  date: string | null;
-  useful: number | null;
-  hasPhotos: boolean;
+  summary: string | null;
 }
 
-export interface ReviewsResult {
-  rating: number | null;
-  totalReviews: number | null;
+export interface ItemSeller {
+  name: string;
+  isCompany: boolean;
+  type: string | null;
+  replyTimeText: string | null;
+  tenureSince: string | null;
+  rating: SellerRatingBadge | null;
+  url: string | null;
+}
+
+export interface ItemDetails {
+  id: number;
+  title: string;
+  url: string;
+  active: boolean | null;
+  price: number | null;
+  priceText: string | null;
+  description: string | null;
+  characteristics: Characteristic[];
+  address: string | null;
+  coords: Coordinates | null;
+  images: string[];
+  publishedText: string | null;
+  views: ItemViews | null;
+  seller: ItemSeller | null;
+}
+
+export interface ScoreCount {
+  score: number;
   count: number;
-  reviews: ProductReview[];
+}
+
+export interface RatingSummary {
+  score: number | null;
+  reviewCount: number | null;
+  distribution: ScoreCount[];
+}
+
+export interface SellerReview {
+  score: number | null;
+  date: string | null;
+  role: string | null;
+  itemTitle: string | null;
+  stage: string | null;
+  text: string;
+  answer: string | null;
+}
+
+export interface SellerReviewsResult {
+  listing: { id: number; title: string; url: string };
+  seller: ItemSeller | null;
+  rating: RatingSummary | null;
+  count: number;
+  reviews: SellerReview[];
 }

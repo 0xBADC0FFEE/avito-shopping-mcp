@@ -1,0 +1,205 @@
+{
+  "_request": "GET https://www.avito.ru/web/7/user/{userKey}/ratings?summary_redesign=1&sortRating=date_desc&limit=25&offset=0",
+  "_userKey_source": "item card: buyerItem.rating.userKey (64 hex chars). The /brands/<32-hex> slug does NOT work here (returns {\"entries\":[]}).",
+  "_captured": "2026-10-06, page-context fetch() from https://www.avito.ru tab, no login",
+  "_note": "sanitized: reviewer names/avatars redacted; 3 of 25 rating entries kept; the limit param appears ignored (always 25); follow nextPage for more. /web/4,/web/5,/web/6 variants return nginx 404.",
+  "entryTypes": [
+    "score",
+    "photoGalleryPlaceHolder",
+    "searchParametersV2",
+    "rating"
+  ],
+  "nextPage": "/web/7/user/badabb72359d5efbfcfa34413989c41d0cef27381d6000072e45cd298ea3c607/ratings?limit=25&offset=25&photoOnly=false&sortRating=date_desc",
+  "entries": [
+    {
+      "type": "score",
+      "value": {
+        "ratingAction": {
+          "description": "Рейтинг — это среднее арифметическое оценок пользователей.",
+          "link": {
+            "title": "Подробнее",
+            "url": "https://support.avito.ru/articles/1092"
+          },
+          "title": "Написать отзыв",
+          "uri": "/user/review?fid=…"
+        },
+        "ratingStat": [
+          {
+            "count": 154,
+            "score": 5,
+            "title": "154"
+          },
+          {
+            "count": 1,
+            "score": 4,
+            "title": "1"
+          },
+          {
+            "count": 0,
+            "score": 3,
+            "title": "0"
+          },
+          {
+            "count": 0,
+            "score": 2,
+            "title": "0"
+          },
+          {
+            "count": 0,
+            "score": 1,
+            "title": "0"
+          }
+        ],
+        "reviewCount": 155,
+        "score": 5,
+        "scoreFloat": 5,
+        "subtitle": "155 отзывов",
+        "title": "Отличный продавец"
+      }
+    },
+    {
+      "type": "photoGalleryPlaceHolder",
+      "value": {
+        "show": true
+      }
+    },
+    {
+      "type": "searchParametersV2",
+      "value": {
+        "blocks": [
+          {
+            "sort": {
+              "analyticsParamName": "reviews_sort",
+              "options": [
+                {
+                  "label": "Сначала новые",
+                  "value": "date_desc"
+                },
+                {
+                  "label": "Сначала старые",
+                  "value": "date_asc"
+                },
+                {
+                  "label": "Сначала положительные",
+                  "value": "score_desc"
+                },
+                {
+                  "label": "Сначала отрицательные",
+                  "value": "score_asc"
+                }
+              ],
+              "paramName": "sortRating",
+              "selectedOption": "date_desc"
+            }
+          },
+          {
+            "inlineBoolFilter": {
+              "analyticsParamName": "reviews_filter_photo",
+              "label": "Только с фото",
+              "paramName": "photoOnly",
+              "selected": false
+            }
+          }
+        ],
+        "requiredFilters": [
+          "sortRating",
+          "photoOnly"
+        ]
+      }
+    },
+    {
+      "type": "rating",
+      "value": {
+        "avatar": {
+          "<size>": "<avatar url>"
+        },
+        "id": 485327396,
+        "itemTitle": null,
+        "rated": "сегодня",
+        "reviewSenderProfile": {
+          "status": "hidden"
+        },
+        "score": 5,
+        "stageTitle": null,
+        "textSections": [
+          {
+            "text": "Всё отлично 👍 Покупателя рекомендую"
+          }
+        ],
+        "title": "<public first name>",
+        "titleCaption": "Продавец"
+      }
+    },
+    {
+      "type": "rating",
+      "value": {
+        "avatar": {
+          "<size>": "<avatar url>"
+        },
+        "deliveryTitle": "Заказано с Авито Доставкой",
+        "id": 479115156,
+        "itemTitle": "Лоферы женские 39 размер",
+        "rated": "20 сентября",
+        "reviewSenderProfile": {
+          "status": "hidden"
+        },
+        "score": 5,
+        "stageTitle": "Сделка сорвалась",
+        "textSections": [
+          {
+            "text": "Все как в описании"
+          }
+        ],
+        "title": "<public first name>",
+        "titleCaption": "Покупатель"
+      }
+    },
+    {
+      "type": "rating",
+      "value": {
+        "answer": {
+          "answerId": 97579412,
+          "answerSenderProfile": {
+            "status": "hidden"
+          },
+          "answered": "4 августа",
+          "avatar": {
+            "<size>": "<avatar url>"
+          },
+          "link": "https://www.avito.ru/brands/03ce308a3e5989378d53c4f1b2f80718?src=ratings",
+          "text": "Спасибо большое ",
+          "title": "<public first name>"
+        },
+        "avatar": {
+          "<size>": "<avatar url>"
+        },
+        "id": 460606900,
+        "images": [
+          {
+            "1280x960": "https://70.img.avito.st/image/1/1.W6n2H7a5XR1CPOHCTzAXm64c9kJEuvfCVDz6QkSq80I.qB0WD0UiDKy0xGdUXfwktsi2fcj1HTLX-d7oXnlgrds",
+            "640x480": "https://70.img.avito.st/image/1/1.W6n2H7a5XR1CPP-CRzAXm64c9kJEuvfCSnzyQkSq80I.-GJXArc8pUwfwlAlJzF_CvxXy1ErUhnwdRainfSQWqw",
+            "originalSize": {
+              "width": 1280,
+              "height": 960
+            },
+            "_note": "also 180x135, 256x192"
+          }
+        ],
+        "itemTitle": "Велосипед Paruisi U8 26''",
+        "rated": "1 августа",
+        "reviewSenderProfile": {
+          "status": "hidden"
+        },
+        "score": 5,
+        "stageTitle": "Сделка сорвалась",
+        "textSections": [
+          {
+            "text": "Спасибо,  всё отлично ."
+          }
+        ],
+        "title": "<public first name>",
+        "titleCaption": "Покупатель"
+      }
+    }
+  ]
+}

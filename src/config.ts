@@ -14,6 +14,12 @@ export interface RuntimeConfig {
   navigationTimeoutMs: number;
 }
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+// Avito throttles an IP after a few dozen requests in quick succession.
+const DEFAULT_MIN_REQUEST_INTERVAL_MS = 5_000;
+const DEFAULT_IDLE_TIMEOUT_MS = 5 * 60_000;
+const DEFAULT_NAVIGATION_TIMEOUT_MS = 90_000;
+
 function positiveInteger(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw === undefined) return fallback;
@@ -50,9 +56,9 @@ export function loadConfig(): RuntimeConfig {
     ...(executablePath ? { executablePath: resolve(executablePath) } : {}),
     stateDir,
     stateFile: join(stateDir, "session.json"),
-    requestTimeoutMs: positiveInteger("AVITO_MCP_REQUEST_TIMEOUT_MS", 30_000),
-    minimumRequestIntervalMs: positiveInteger("AVITO_MCP_MIN_REQUEST_INTERVAL_MS", 750),
-    idleTimeoutMs: positiveInteger("AVITO_MCP_IDLE_TIMEOUT_MS", 5 * 60_000),
-    navigationTimeoutMs: positiveInteger("AVITO_MCP_NAVIGATION_TIMEOUT_MS", 90_000),
+    requestTimeoutMs: positiveInteger("AVITO_MCP_REQUEST_TIMEOUT_MS", DEFAULT_REQUEST_TIMEOUT_MS),
+    minimumRequestIntervalMs: positiveInteger("AVITO_MCP_MIN_REQUEST_INTERVAL_MS", DEFAULT_MIN_REQUEST_INTERVAL_MS),
+    idleTimeoutMs: positiveInteger("AVITO_MCP_IDLE_TIMEOUT_MS", DEFAULT_IDLE_TIMEOUT_MS),
+    navigationTimeoutMs: positiveInteger("AVITO_MCP_NAVIGATION_TIMEOUT_MS", DEFAULT_NAVIGATION_TIMEOUT_MS),
   };
 }
