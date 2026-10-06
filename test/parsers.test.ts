@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { MOSCOW } from "../src/avito-api.js";
 import { at } from "../src/json-fields.js";
 import { parseLocations, parseRatingsPage, parseSearchPage } from "../src/parsers.js";
 import { jsonFixture } from "./fixture.js";
@@ -10,7 +11,7 @@ describe("parseSearchPage", () => {
   const response = jsonFixture("search-web1-js-items.json");
 
   it("extracts listings with absolute URLs, ISO timestamps, and the seller block", () => {
-    const page = parseSearchPage(response);
+    const page = parseSearchPage(response, MOSCOW);
     expect(page.totalCount).toBe(600);
     expect(page.items).toHaveLength(2);
     expect(page.items[0]).toEqual({
@@ -19,7 +20,7 @@ describe("parseSearchPage", () => {
       price: 14_000,
       priceText: "14 000 ₽",
       url: "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574",
-      location: null,
+      location: "Москва",
       publishedAt: "2026-10-06T18:11:34.000Z",
       image: expect.stringMatching(/^https:\/\/b00\.img\.avito\.st\/image\//),
       seller: {
@@ -30,8 +31,16 @@ describe("parseSearchPage", () => {
     });
   });
 
+  it("names a listing by its own address, else by the searched location it lies in", () => {
+    const listing = { type: "item", id: 1, title: "Диван", urlPath: "/moskva/mebel/divan_1" };
+    const locationOf = (entry: object) => parseSearchPage({ totalCount: 1, catalog: { items: [entry] } }, MOSCOW).items[0]?.location;
+    expect(locationOf({ ...listing, addressDetailed: { locationName: "Химки" } })).toBe("Химки");
+    expect(locationOf({ ...listing, locationId: MOSCOW.id })).toBe("Москва");
+    expect(locationOf({ ...listing, locationId: 650_400 })).toBeNull();
+  });
+
   it("leaves the seller empty when Avito shows no seller block", () => {
-    expect(parseSearchPage(response).items[1]).toMatchObject({ id: 8_544_880_758, price: 9_500, seller: null });
+    expect(parseSearchPage(response, MOSCOW).items[1]).toMatchObject({ id: 8_544_880_758, price: 9_500, seller: null });
   });
 
   it("skips non-listing entries and reports a missing price", () => {
@@ -43,14 +52,14 @@ describe("parseSearchPage", () => {
           { type: "item", id: 1, title: "Диван", urlPath: "/kazan/mebel/divan_1", priceDetailed: { hasValue: false, fullString: "Цена не указана" } },
         ],
       },
-    });
+    }, MOSCOW);
     expect(page.items).toEqual([expect.objectContaining({ id: 1, price: null, priceText: "Цена не указана", publishedAt: null })]);
   });
 
   it("names the missing path when the format changes", () => {
-    expect(() => parseSearchPage({ url: "/moskva" })).toThrow(expect.objectContaining(INVALID_RESPONSE));
-    expect(() => parseSearchPage({ url: "/moskva" })).toThrow(/catalog\.items/);
-    expect(() => parseSearchPage({ totalCount: 1, catalog: { items: [{ type: "item", title: "x" }] } })).toThrow(
+    expect(() => parseSearchPage({ url: "/moskva" }, MOSCOW)).toThrow(expect.objectContaining(INVALID_RESPONSE));
+    expect(() => parseSearchPage({ url: "/moskva" }, MOSCOW)).toThrow(/catalog\.items/);
+    expect(() => parseSearchPage({ totalCount: 1, catalog: { items: [{ type: "item", title: "x" }] } }, MOSCOW)).toThrow(
       /catalog\.items\[0\]\.id/,
     );
   });

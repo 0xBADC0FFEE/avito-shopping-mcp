@@ -87,6 +87,7 @@ export class AvitoClient {
       await this.session.requestJson(
         searchApiUrl({ query, locationId: location.id, sort, page, priceMin: input.priceMin, priceMax: input.priceMax }),
       ),
+      location,
     );
     const items = result.items.slice(0, input.limit ?? DEFAULT_SEARCH_LIMIT);
     return { query, location, sort, page, totalCount: result.totalCount, count: items.length, items };

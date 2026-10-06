@@ -19,12 +19,18 @@ const SELLER_INFO_COMPONENT = "seller-info";
 const SCORE_ENTRY = "score";
 const REVIEW_ENTRY = "rating";
 
-export function parseSearchPage(response: unknown): SearchPage {
+/**
+ * Reads one page of `/web/1/js/items`.
+ * @param response Parsed JSON body.
+ * @param searchLocation Location the search was scoped to; names listings whose own address Avito leaves blank.
+ * @returns Total result count and the listings on this page.
+ */
+export function parseSearchPage(response: unknown, searchLocation: Location): SearchPage {
   const entries = required(list(at(response, "catalog", "items")), "catalog.items");
   return {
     totalCount: required(integer(at(response, "totalCount")), "totalCount"),
     items: entries
-      .map((entry, index) => (at(entry, "type") === LISTING_TYPE ? searchItem(entry, `catalog.items[${index}]`) : null))
+      .map((entry, index) => (at(entry, "type") === LISTING_TYPE ? searchItem(entry, `catalog.items[${index}]`, searchLocation) : null))
       .filter(isPresent),
   };
 }
@@ -46,7 +52,7 @@ export function parseRatingsPage(response: unknown): RatingsPage {
   };
 }
 
-function searchItem(entry: unknown, path: string): SearchItem {
+function searchItem(entry: unknown, path: string, searchLocation: Location): SearchItem {
   const hasPrice = at(entry, "priceDetailed", "hasValue") !== false;
   const publishedAt = integer(at(entry, "sortTimeStamp"));
   const image = text(at(array(at(entry, "images"))[0], SEARCH_IMAGE_SIZE));
@@ -56,11 +62,19 @@ function searchItem(entry: unknown, path: string): SearchItem {
     price: hasPrice ? integer(at(entry, "priceDetailed", "value")) : null,
     priceText: displayText(at(entry, "priceDetailed", "fullString")),
     url: required(publicUrl(required(text(at(entry, "urlPath")), `${path}.urlPath`)), `${path}.urlPath`),
-    location: text(at(entry, "addressDetailed", "locationName")) ?? text(at(entry, "geo", "formattedAddress")),
+    location:
+      text(at(entry, "addressDetailed", "locationName")) ??
+      text(at(entry, "geo", "formattedAddress")) ??
+      locationNameIfWithin(entry, searchLocation),
     publishedAt: publishedAt === null ? null : new Date(publishedAt).toISOString(),
     image: image !== null && isAllowedOutputUrl(image) ? image : null,
     seller: searchSeller(entry),
   };
+}
+
+function locationNameIfWithin(entry: unknown, searchLocation: Location): string | null {
+  const locationId = integer(at(entry, "locationId"));
+  return locationId === null || locationId === searchLocation.id ? searchLocation.name : null;
 }
 
 function searchSeller(entry: unknown): SearchSeller | null {
