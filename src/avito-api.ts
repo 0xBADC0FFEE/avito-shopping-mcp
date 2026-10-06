@@ -39,12 +39,14 @@ export function searchApiUrl(search: SearchQuery): string {
   return `${AVITO_ORIGIN}${SEARCH_API_PATH}?${params.toString()}`;
 }
 
-export const SESSION_PROBE_URL = searchApiUrl({ query: "iphone", locationId: MOSCOW.id, sort: "default", page: 1 });
+export const SEARCH_PROBE_URL = searchApiUrl({ query: "iphone", locationId: MOSCOW.id, sort: "default", page: 1 });
 
-export function locationsApiUrl(name: string): string {
-  const params = new URLSearchParams({ limit: String(LOCATION_CANDIDATES), q: name });
+export function locationsApiUrl(name: string, limit = LOCATION_CANDIDATES): string {
+  const params = new URLSearchParams({ limit: String(limit), q: name });
   return `${AVITO_ORIGIN}${LOCATIONS_API_PATH}?${params.toString()}`;
 }
+
+export const LIVENESS_PROBE_URL = locationsApiUrl(MOSCOW.name, 1);
 
 export function itemPageUrl(id: number): string {
   return `${AVITO_ORIGIN}/${id}`;

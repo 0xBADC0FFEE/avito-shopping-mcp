@@ -124,7 +124,7 @@ export function createServer(client: AvitoClient): McpServer {
     {
       title: "Check Avito MCP health",
       description:
-        "Check whether a protected local browser session exists. Set live=true to also run one test search against Avito.",
+        "Check whether a protected local browser session exists. Set live=true to also send one lightweight request to Avito through the saved session.",
       inputSchema: z.object({
         live: z.boolean().default(false),
       }),

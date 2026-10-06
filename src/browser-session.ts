@@ -1,7 +1,7 @@
 import { chromium, errors } from "playwright";
 import type { Browser, BrowserContext, LaunchOptions, Page } from "playwright";
 
-import { AVITO_HOME_URL, isAllowedRequestUrl, SESSION_PROBE_URL } from "./avito-api.js";
+import { AVITO_HOME_URL, isAllowedRequestUrl, LIVENESS_PROBE_URL, SEARCH_PROBE_URL } from "./avito-api.js";
 import { BLOCK_PAGE_TITLE_PREFIX, classifyResponse, isBlockPageTitle } from "./block-detection.js";
 import type { ResponseVerdict } from "./block-detection.js";
 import type { RuntimeConfig } from "./config.js";
@@ -129,7 +129,7 @@ export class AvitoBrowserSession {
 
   async checkLive(): Promise<LiveSessionCheck> {
     try {
-      await this.requestJson(SESSION_PROBE_URL);
+      await this.requestJson(LIVENESS_PROBE_URL);
       return { ok: true };
     } catch (error) {
       return { ok: false, error: safeError(error) };
@@ -164,7 +164,7 @@ export class AvitoBrowserSession {
     let lastProbe: ClassifiedResponse | undefined;
     let challengeRetried = false;
     while (await this.waitForAccessiblePage(page, deadline, report)) {
-      const response = await this.rawRequest(page, SESSION_PROBE_URL, "json");
+      const response = await this.rawRequest(page, SEARCH_PROBE_URL, "json");
       lastProbe = { response, verdict: classifyResponse(response) };
       if (lastProbe.verdict === "ok") return { ready: true };
 
