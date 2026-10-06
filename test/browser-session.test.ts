@@ -83,6 +83,16 @@ describe("AvitoBrowserSession rate-limit backoff", () => {
     expect(avito.evaluate).toHaveBeenCalledTimes(1);
   });
 
+  it("reports a browser-side failure as a failed request with its reason", async () => {
+    avito.evaluate.mockReset();
+    avito.evaluate.mockRejectedValueOnce(new Error("page.evaluate: Execution context was destroyed\nCall log: …"));
+
+    await expect(session.requestJson(PROBE_URL)).rejects.toMatchObject({
+      code: "REQUEST_FAILED",
+      message: "Avito request failed: page.evaluate: Execution context was destroyed",
+    });
+  });
+
   it("resumes once a newer session is stored", async () => {
     await expect(session.requestJson(PROBE_URL)).rejects.toMatchObject({ code: "AVITO_RATE_LIMITED" });
     await store.save(storedSession(new Date(Date.now() + 1)));

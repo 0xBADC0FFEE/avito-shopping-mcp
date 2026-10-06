@@ -347,6 +347,14 @@ export class AvitoBrowserSession {
   }
 
   private async rawRequest(page: Page, url: string, contentType: ContentType): Promise<RawResponse> {
+    try {
+      return await this.fetchInPage(page, url, contentType);
+    } catch (error) {
+      return { status: 0, text: "", url, requestError: firstLine(error) };
+    }
+  }
+
+  private fetchInPage(page: Page, url: string, contentType: ContentType): Promise<RawResponse> {
     return page.evaluate(
       async ({ requestUrl, timeout, accept }) => {
         const controller = new AbortController();
@@ -431,6 +439,11 @@ async function waitForPageLoad(page: Page, deadline: number): Promise<boolean> {
     if (error instanceof errors.TimeoutError) return false;
     throw error;
   }
+}
+
+function firstLine(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.split("\n", 1)[0] ?? message;
 }
 
 function assertWindowOpen(page: Page): void {
