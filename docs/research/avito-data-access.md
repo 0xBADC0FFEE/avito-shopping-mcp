@@ -18,7 +18,7 @@ Sanitized samples are in [`test/fixtures/`](../../test/fixtures/), where the par
 
 The IP was already banned for both raw HTTP and top-level navigation. Same-origin `fetch()` from an already-open avito.ru tab, even one showing the block page, kept returning 200 for about 25 requests over about 15 minutes. After that it also got `429 {"too-many-requests":…}` JSON.
 
-**Recommendation:** reuse the WB architecture.
+**Recommendation:** reuse the browser-transport architecture of [wb-shopping-mcp](https://github.com/0xBADC0FFEE/wb-shopping-mcp).
 
 - A persistent Playwright profile and a headless page parked on `https://www.avito.ru/`.
 - All data calls go through `page.evaluate(fetch(url, {headers:{accept:'application/json'}}))`.
@@ -119,7 +119,7 @@ Notes:
   - From a listing: fetch the item (above) and read `buyerItem.rating.userKey`. This works.
   - From a `/brands/<32-hex slug>` URL: the profile HTML is client-rendered, and its `data-props` has only `domain:<slug>`. The page calls `GET /web/1/domain/{slug}/extended-profile`; I hit the throttle before getting a 200 from it (see open risks). `/web/3/user/<slug>/…` answers "Пользователь не найден", and `/web/7/user/<slug>/ratings` returns `{"entries":[]}`.
 
-Samples: `seller-extended-profile-web3.json`, `seller-ratings-web7.json`.
+Sample: `seller-ratings-web7.json`.
 
 ### Location resolution: `GET /web/1/slocations?limit=10&q=<Cyrillic name>`
 
